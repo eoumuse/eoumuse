@@ -96,8 +96,8 @@ export class AttractorParticles {
       positions[i * 3 + 1] = ny
       positions[i * 3 + 2] = nz
 
-      // Fade alpha: trail effect (older = more transparent)
-      alphas[i] = 0.3 + (i / numPoints) * 0.7
+      // Dim background: subtle reference cloud, not dominant
+      alphas[i] = 0.08 + (i / numPoints) * 0.18
 
       // Color interpolation
       const t = (i / numPoints) * 3

@@ -1,15 +1,18 @@
 import * as THREE from 'three'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
 export class SceneManager {
   scene: THREE.Scene
   camera: THREE.PerspectiveCamera
   renderer: THREE.WebGLRenderer
+  controls: OrbitControls
   private animationId: number | null = null
+  private autoRotateTimeout: ReturnType<typeof setTimeout> | null = null
 
   constructor(canvas: HTMLCanvasElement) {
     this.scene = new THREE.Scene()
     this.scene.background = new THREE.Color(0x28282f)
-    this.scene.fog = new THREE.FogExp2(0x28282f, 0.06)
+    this.scene.fog = new THREE.FogExp2(0x28282f, 0.04)
 
     this.camera = new THREE.PerspectiveCamera(
       60,
@@ -17,8 +20,8 @@ export class SceneManager {
       0.01,
       1000
     )
-    this.camera.position.set(0, 1, 8)
-    this.camera.lookAt(0, 0, 0)
+    this.camera.position.set(0, 2, 10)
+    this.camera.lookAt(0, 0, 2)
 
     this.renderer = new THREE.WebGLRenderer({
       canvas,
@@ -30,7 +33,28 @@ export class SceneManager {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping
     this.renderer.toneMappingExposure = 1.2
 
-    // Ambient light
+    // OrbitControls — drag to rotate, scroll to zoom
+    this.controls = new OrbitControls(this.camera, canvas)
+    this.controls.enableDamping = true
+    this.controls.dampingFactor = 0.06
+    this.controls.autoRotate = true
+    this.controls.autoRotateSpeed = 0.6
+    this.controls.target.set(0, 0, 2)
+    this.controls.minDistance = 2
+    this.controls.maxDistance = 30
+    // Pause auto-rotate while user is dragging, resume after 3s idle
+    canvas.addEventListener('pointerdown', () => {
+      this.controls.autoRotate = false
+      if (this.autoRotateTimeout) clearTimeout(this.autoRotateTimeout)
+    })
+    canvas.addEventListener('pointerup', () => {
+      if (this.autoRotateTimeout) clearTimeout(this.autoRotateTimeout)
+      this.autoRotateTimeout = setTimeout(() => {
+        this.controls.autoRotate = true
+      }, 3000)
+    })
+
+    // Lights
     const ambient = new THREE.AmbientLight(0x505060, 2.5)
     this.scene.add(ambient)
 
@@ -45,6 +69,7 @@ export class SceneManager {
 
   startAnimation(onFrame: (time: number) => void) {
     const tick = (time: number) => {
+      this.controls.update()
       onFrame(time)
       this.renderer.render(this.scene, this.camera)
       this.animationId = requestAnimationFrame(tick)
@@ -67,6 +92,8 @@ export class SceneManager {
 
   dispose() {
     this.stopAnimation()
+    if (this.autoRotateTimeout) clearTimeout(this.autoRotateTimeout)
+    this.controls.dispose()
     this.renderer.dispose()
   }
 }

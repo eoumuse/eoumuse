@@ -2,48 +2,88 @@ import * as THREE from 'three'
 import type { AttractorEngine } from '../audio/AttractorEngine'
 
 /**
- * Renders the attractor trail as a glowing neon line/particle system.
- * Uses additive blending so overlapping paths bloom like neon tubes.
+ * Renders the live attractor trajectory as a glowing neon line.
+ * Two layers: a crisp Line (1px, additive) for the path shape,
+ * plus a Points layer for glow, plus a bright head sphere at the current tip.
  */
 export class AttractorVisualizer {
-  private points: THREE.Points
-  private geometry: THREE.BufferGeometry
-  private posAttr: THREE.BufferAttribute
-  private colorAttr: THREE.BufferAttribute
-  private scaleUniform: THREE.IUniform<number>
+  private lineGeom: THREE.BufferGeometry
+  private linePosAttr: THREE.BufferAttribute
+  private lineColorAttr: THREE.BufferAttribute
+  private line: THREE.Line
 
-  // Scale factor to map raw attractor coords into ~[-3,3] scene space
+  private glowGeom: THREE.BufferGeometry
+  private glowPosAttr: THREE.BufferAttribute
+  private glowColorAttr: THREE.BufferAttribute
+  private glowPoints: THREE.Points
+
+  private headMesh: THREE.Mesh
+  private headLight: THREE.PointLight
+
   private scaleMap: Record<string, number> = {
-    lorenz: 0.12,
+    lorenz:  0.12,
     rossler: 0.22,
-    thomas: 0.55,
+    thomas:  0.55,
   }
 
   constructor(scene: THREE.Scene, trailLength: number) {
-    this.geometry = new THREE.BufferGeometry()
-    const positions = new Float32Array(trailLength * 3)
-    const colors    = new Float32Array(trailLength * 3)
+    // ── Line path ──────────────────────────────────────────────────────────
+    this.lineGeom = new THREE.BufferGeometry()
+    const lPos = new Float32Array(trailLength * 3)
+    const lCol = new Float32Array(trailLength * 3)
+    this.linePosAttr   = new THREE.BufferAttribute(lPos, 3)
+    this.lineColorAttr = new THREE.BufferAttribute(lCol, 3)
+    this.lineGeom.setAttribute('position', this.linePosAttr)
+    this.lineGeom.setAttribute('color',    this.lineColorAttr)
+    this.lineGeom.setDrawRange(0, 0)
 
-    this.posAttr   = new THREE.BufferAttribute(positions, 3)
-    this.colorAttr = new THREE.BufferAttribute(colors, 3)
-    this.geometry.setAttribute('position', this.posAttr)
-    this.geometry.setAttribute('color',    this.colorAttr)
-    this.geometry.setDrawRange(0, 0)
-
-    this.scaleUniform = { value: 0.12 }
-
-    const material = new THREE.PointsMaterial({
-      size: 0.045,
+    const lineMat = new THREE.LineBasicMaterial({
       vertexColors: true,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       transparent: true,
-      opacity: 0.85,
+      opacity: 0.7,
+    })
+    this.line = new THREE.Line(this.lineGeom, lineMat)
+    scene.add(this.line)
+
+    // ── Glow points (subset — every 4th point to keep GPU load low) ────────
+    const glowLen = Math.ceil(trailLength / 4)
+    this.glowGeom = new THREE.BufferGeometry()
+    const gPos = new Float32Array(glowLen * 3)
+    const gCol = new Float32Array(glowLen * 3)
+    this.glowPosAttr   = new THREE.BufferAttribute(gPos, 3)
+    this.glowColorAttr = new THREE.BufferAttribute(gCol, 3)
+    this.glowGeom.setAttribute('position', this.glowPosAttr)
+    this.glowGeom.setAttribute('color',    this.glowColorAttr)
+    this.glowGeom.setDrawRange(0, 0)
+
+    const glowMat = new THREE.PointsMaterial({
+      size: 0.06,
+      vertexColors: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      transparent: true,
+      opacity: 0.55,
       sizeAttenuation: true,
     })
+    this.glowPoints = new THREE.Points(this.glowGeom, glowMat)
+    scene.add(this.glowPoints)
 
-    this.points = new THREE.Points(this.geometry, material)
-    scene.add(this.points)
+    // ── Head: bright sphere at current attractor tip ───────────────────────
+    const headGeo = new THREE.SphereGeometry(0.08, 12, 12)
+    const headMat = new THREE.MeshBasicMaterial({
+      color: 0xffd840,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      transparent: true,
+      opacity: 0.95,
+    })
+    this.headMesh = new THREE.Mesh(headGeo, headMat)
+    scene.add(this.headMesh)
+
+    this.headLight = new THREE.PointLight(0xffd840, 2.0, 2.0)
+    scene.add(this.headLight)
   }
 
   update(engine: AttractorEngine) {
@@ -53,51 +93,85 @@ export class AttractorVisualizer {
     const filled = engine.trailFilled
     const count  = filled ? len : head
     const scale  = this.scaleMap[engine.params.type] ?? 0.12
-    this.scaleUniform.value = scale
 
-    // reorder trail so newest point is last
-    const pos = this.posAttr.array as Float32Array
-    const col = this.colorAttr.array as Float32Array
+    if (count === 0) return
 
+    const lp = this.linePosAttr.array as Float32Array
+    const lc = this.lineColorAttr.array as Float32Array
+    const gp = this.glowPosAttr.array as Float32Array
+    const gc = this.glowColorAttr.array as Float32Array
+
+    let gi = 0
     for (let i = 0; i < count; i++) {
-      // age: 0=oldest, 1=newest
-      const age = i / count
-      const src = filled
-        ? ((head + i) % len) * 3
-        : i * 3
+      const age = i / count   // 0=oldest, 1=newest
+      const src = filled ? ((head + i) % len) * 3 : i * 3
 
-      pos[i * 3]     = trail[src]     * scale
-      pos[i * 3 + 1] = trail[src + 1] * scale
-      pos[i * 3 + 2] = trail[src + 2] * scale
+      const px = trail[src]     * scale
+      const py = trail[src + 1] * scale
+      const pz = trail[src + 2] * scale
 
-      // Color: pink → yellow → light gray along path age
-      if (age < 0.5) {
-        const t = age / 0.5
-        // pink(1,0.18,0.61) → yellow(1,0.9,0.16)
-        col[i * 3]     = 1.0
-        col[i * 3 + 1] = 0.18 + t * 0.72
-        col[i * 3 + 2] = 0.61 - t * 0.45
+      lp[i * 3]     = px
+      lp[i * 3 + 1] = py
+      lp[i * 3 + 2] = pz
+
+      // Gradient: dark amber → ochre(0.82,0.57,0.12) → bright gold(1,0.87,0.22)
+      let r: number, g: number, b: number
+      if (age < 0.6) {
+        const t = age / 0.6
+        // dark amber(0.45,0.28,0.04) → warm ochre(0.82,0.57,0.12)
+        r = 0.45 + t * 0.37
+        g = 0.28 + t * 0.29
+        b = 0.04 + t * 0.08
       } else {
-        const t = (age - 0.5) / 0.5
-        // yellow(1,0.9,0.16) → light gray(0.75,0.75,0.8)
-        col[i * 3]     = 1.0  - t * 0.25
-        col[i * 3 + 1] = 0.9  - t * 0.15
-        col[i * 3 + 2] = 0.16 + t * 0.64
+        const t = (age - 0.6) / 0.4
+        // warm ochre(0.82,0.57,0.12) → bright gold(1.0,0.87,0.22)
+        r = 0.82 + t * 0.18
+        g = 0.57 + t * 0.30
+        b = 0.12 + t * 0.10
       }
-      // fade out oldest 20%
-      const fade = Math.min(1, age * 5)
-      col[i * 3]     *= fade
-      col[i * 3 + 1] *= fade
-      col[i * 3 + 2] *= fade
+      // Fade out oldest 25%
+      const fade = Math.min(1, age * 4.0)
+      lc[i * 3]     = r * fade
+      lc[i * 3 + 1] = g * fade
+      lc[i * 3 + 2] = b * fade
+
+      // Glow layer: every 4th point
+      if (i % 4 === 0) {
+        gp[gi * 3]     = px
+        gp[gi * 3 + 1] = py
+        gp[gi * 3 + 2] = pz
+        gc[gi * 3]     = lc[i * 3]
+        gc[gi * 3 + 1] = lc[i * 3 + 1]
+        gc[gi * 3 + 2] = lc[i * 3 + 2]
+        gi++
+      }
     }
 
-    this.posAttr.needsUpdate   = true
-    this.colorAttr.needsUpdate = true
-    this.geometry.setDrawRange(0, count)
+    this.linePosAttr.needsUpdate   = true
+    this.lineColorAttr.needsUpdate = true
+    this.lineGeom.setDrawRange(0, count)
+
+    this.glowPosAttr.needsUpdate   = true
+    this.glowColorAttr.needsUpdate = true
+    this.glowGeom.setDrawRange(0, gi)
+
+    // Head sphere at newest point
+    const hi = filled ? ((head - 1 + len) % len) * 3 : (head - 1) * 3
+    if (hi >= 0) {
+      const hx = trail[hi]     * scale
+      const hy = trail[hi + 1] * scale
+      const hz = trail[hi + 2] * scale
+      this.headMesh.position.set(hx, hy, hz)
+      this.headLight.position.set(hx, hy, hz)
+    }
   }
 
   dispose(scene: THREE.Scene) {
-    scene.remove(this.points)
-    this.geometry.dispose()
+    scene.remove(this.line)
+    scene.remove(this.glowPoints)
+    scene.remove(this.headMesh)
+    scene.remove(this.headLight)
+    this.lineGeom.dispose()
+    this.glowGeom.dispose()
   }
 }

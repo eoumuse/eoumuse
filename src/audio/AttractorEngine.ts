@@ -109,7 +109,7 @@ export class AttractorEngine {
 
   // Rolling history for 3D trail rendering (last N positions)
   trail: Float32Array  // x0,y0,z0, x1,y1,z1, ...
-  trailLength = 3000
+  trailLength = 6000
   trailHead = 0
   trailFilled = false
 

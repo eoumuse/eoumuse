@@ -29,8 +29,8 @@ export function GeometryView3D() {
     const sm = new SceneManager(canvas)
     sceneRef.current = sm
 
-    // Decorative static background (always Lorenz, slow rotation)
-    const bg = new AttractorParticles(4000)
+    // Faint static Lorenz cloud in the background — depth/context reference
+    const bg = new AttractorParticles(2000)
     sm.scene.add(bg.points)
     bgRef.current = bg
 
@@ -38,7 +38,7 @@ export function GeometryView3D() {
     const engine = new AttractorEngine('lorenz')
     engineRef.current = engine
 
-    // Live trail: small, bright, reacts to param changes in real-time
+    // Live trajectory line — shows the attractor's shape as it evolves
     const liveVis = new AttractorVisualizer(sm.scene, engine.trailLength)
     liveVisRef.current = liveVis
 
