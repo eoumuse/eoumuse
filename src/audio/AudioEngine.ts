@@ -1,3 +1,5 @@
+import { harmonizerEngine } from './HarmonizerEngine'
+
 export class AudioEngine {
   ctx!: AudioContext
   buffer: AudioBuffer | null = null
@@ -97,6 +99,9 @@ export class AudioEngine {
       this.filterNode.connect(this.reverbNode)
       this.reverbNode.connect(this.reverbWetNode)
       this.reverbWetNode.connect(this.masterGainNode)
+
+      // Wire harmonizer to this context
+      harmonizerEngine.init(this.ctx, this.masterGainNode)
     }
   }
 
@@ -187,6 +192,15 @@ export class AudioEngine {
 
   private scheduleGrains(): void {
     if (!this.buffer || !this._isStarted) return
+
+    // Tick harmonizer voices
+    harmonizerEngine.tick(
+      this.position,
+      this.pitch,
+      this.grainSize,
+      this.density,
+      this.scatter,
+    )
 
     const lookahead = 0.1
     const grainSizeSec = this.grainSize / 1000

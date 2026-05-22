@@ -22,9 +22,9 @@ interface HarmonizerVoice {
 }
 
 export class HarmonizerEngine {
-  private ctx: AudioContext
+  private ctx: AudioContext | null = null
   private buffer: AudioBuffer | null = null
-  private masterGainNode: GainNode
+  private masterGainNode: GainNode | null = null
   private voices: HarmonizerVoice[] = []
 
   enabled = false
@@ -33,7 +33,16 @@ export class HarmonizerEngine {
   voiceGain = 0.35
   detune = 8
 
-  constructor(ctx: AudioContext, masterGainNode: GainNode) {
+  constructor(ctx?: AudioContext, masterGainNode?: GainNode) {
+    if (ctx && masterGainNode) {
+      this.ctx = ctx
+      this.masterGainNode = masterGainNode
+      this.rebuildVoices()
+    }
+  }
+
+  /** Wire to the AudioEngine after its context is created */
+  init(ctx: AudioContext, masterGainNode: GainNode): void {
     this.ctx = ctx
     this.masterGainNode = masterGainNode
     this.rebuildVoices()
@@ -43,9 +52,10 @@ export class HarmonizerEngine {
     const intervals = CHORD_MODES[this.chordMode] ?? [0, 4, 7]
     // Skip first interval (0 = unison, that's the main engine)
     const harmonyIntervals = intervals.slice(1)
+    const now = this.ctx ? this.ctx.currentTime : 0
     this.voices = harmonyIntervals.map((semitones) => ({
       pitchOffsetSemitones: semitones,
-      nextGrainTime: this.ctx.currentTime + 0.05,
+      nextGrainTime: now + 0.05,
     }))
   }
 
@@ -73,7 +83,7 @@ export class HarmonizerEngine {
     density: number,
     scatter: number
   ): void {
-    if (!this.enabled || !this.buffer) return
+    if (!this.enabled || !this.buffer || !this.ctx || !this.masterGainNode) return
 
     const lookahead = 0.1
     const grainSizeSec = grainSize / 1000
@@ -125,3 +135,5 @@ export class HarmonizerEngine {
     // Voices stop naturally as they don't schedule new grains
   }
 }
+
+export const harmonizerEngine = new HarmonizerEngine()

@@ -3,6 +3,9 @@ import { DropZone } from './components/DropZone'
 import { AgentPanel } from './components/AgentPanel'
 import { AttractorPanel } from './components/AttractorPanel'
 import { TransportBar } from './components/TransportBar'
+import { WavePreview } from './components/WavePreview'
+import { EffectsPanel } from './components/EffectsPanel'
+import { HarmonizerPanel } from './components/HarmonizerPanel'
 
 function App() {
   return (
@@ -83,8 +86,14 @@ function App() {
             gap: '10px',
             width: '260px',
             flexShrink: 0,
+            overflowY: 'auto',
+            maxHeight: 'calc(100vh - 120px)',
+            paddingRight: '2px',
           }}>
             <DropZone />
+            <WavePreview />
+            <EffectsPanel />
+            <HarmonizerPanel />
             <AttractorPanel />
             <AgentPanel />
           </div>

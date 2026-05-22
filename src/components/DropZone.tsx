@@ -1,6 +1,8 @@
 import { useRef, useState, useCallback } from 'react'
 import { audioEngine } from '../audio/AudioEngine'
 import { detectOnsets } from '../audio/OnsetDetector'
+import { harmonizerEngine } from '../audio/HarmonizerEngine'
+import { detectKey } from '../audio/KeyDetector'
 import { useSynthStore } from '../store/synthStore'
 
 export function DropZone() {
@@ -11,6 +13,7 @@ export function DropZone() {
 
   const setNodes = useSynthStore((s) => s.setNodes)
   const setAudioLoaded = useSynthStore((s) => s.setAudioLoaded)
+  const setDetectedKey = useSynthStore((s) => s.setDetectedKey)
   const fileName = useSynthStore((s) => s.fileName)
   const audioLoaded = useSynthStore((s) => s.audioLoaded)
 
@@ -80,20 +83,30 @@ export function DropZone() {
     setIsLoading(true)
     try {
       await audioEngine.loadFile(file)
-      const nodes = detectOnsets(audioEngine.buffer!, 200)
+      const buf = audioEngine.buffer!
+      const nodes = detectOnsets(buf, 200)
       setNodes(nodes)
       setAudioLoaded(true, file.name)
 
-      // Draw waveform
-      if (audioEngine.buffer) {
-        drawWaveform(audioEngine.buffer)
+      // Wire harmonizer buffer
+      harmonizerEngine.setBuffer(buf)
+
+      // Run key detection (async-friendly but runs sync on PCM data)
+      try {
+        const keyResult = detectKey(buf)
+        setDetectedKey(keyResult.name, keyResult.confidence)
+      } catch (e) {
+        console.warn('Key detection failed:', e)
       }
+
+      // Draw waveform
+      drawWaveform(buf)
     } catch (e) {
       console.error('Failed to load audio:', e)
     } finally {
       setIsLoading(false)
     }
-  }, [setNodes, setAudioLoaded, drawWaveform])
+  }, [setNodes, setAudioLoaded, setDetectedKey, drawWaveform])
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
