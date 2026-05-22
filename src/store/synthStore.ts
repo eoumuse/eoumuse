@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import type { AttractorType } from '../audio/AttractorEngine'
 
 export interface AudioNode3D {
   id: string
@@ -17,14 +18,29 @@ interface SynthState {
   nodes: AudioNode3D[]
   currentNodeIndex: number
 
-  grainSize: number
-  density: number
-  pitch: number
-  position: number
-  scatter: number
-  panSpread: number
-  masterGain: number
+  // Grain params (attractor overrides position/pitch/grainSize when linked)
+  grainSize: number      // ms 10–2000
+  density: number        // grains/sec 1–100
+  pitch: number          // semitones -24..+24
+  position: number       // 0–1
+  scatter: number        // 0–1
+  panSpread: number      // 0–1
+  masterGain: number     // 0–1
 
+  // Attractor
+  attractorType: AttractorType
+  attractorLinked: boolean  // when true, attractor drives position/pitch/grainSize
+  attractorSpeed: number    // 0.1–4
+  attractorP1: number
+  attractorP2: number
+  attractorP3: number
+
+  // Live attractor state (normalized 0..1) for display
+  attractorNX: number
+  attractorNY: number
+  attractorNZ: number
+
+  // Actions
   setGrainSize: (v: number) => void
   setDensity: (v: number) => void
   setPitch: (v: number) => void
@@ -36,6 +52,13 @@ interface SynthState {
   setNodes: (nodes: AudioNode3D[]) => void
   setCurrentNode: (i: number) => void
   setAudioLoaded: (v: boolean, fileName?: string) => void
+  setAttractorType: (t: AttractorType) => void
+  setAttractorLinked: (v: boolean) => void
+  setAttractorSpeed: (v: number) => void
+  setAttractorP1: (v: number) => void
+  setAttractorP2: (v: number) => void
+  setAttractorP3: (v: number) => void
+  setAttractorState: (nx: number, ny: number, nz: number) => void
 }
 
 export const useSynthStore = create<SynthState>((set) => ({
@@ -53,15 +76,32 @@ export const useSynthStore = create<SynthState>((set) => ({
   panSpread: 0.4,
   masterGain: 0.7,
 
-  setGrainSize: (v) => set({ grainSize: v }),
-  setDensity: (v) => set({ density: v }),
-  setPitch: (v) => set({ pitch: v }),
-  setPosition: (v) => set({ position: v }),
-  setScatter: (v) => set({ scatter: v }),
-  setPanSpread: (v) => set({ panSpread: v }),
-  setMasterGain: (v) => set({ masterGain: v }),
-  setPlaying: (v) => set({ isPlaying: v }),
-  setNodes: (nodes) => set({ nodes }),
-  setCurrentNode: (i) => set({ currentNodeIndex: i }),
-  setAudioLoaded: (v, fileName = '') => set({ audioLoaded: v, fileName }),
+  attractorType: 'lorenz',
+  attractorLinked: true,
+  attractorSpeed: 1,
+  attractorP1: 10,
+  attractorP2: 28,
+  attractorP3: 2.667,
+  attractorNX: 0.5,
+  attractorNY: 0.5,
+  attractorNZ: 0.5,
+
+  setGrainSize:      (v) => set({ grainSize: v }),
+  setDensity:        (v) => set({ density: v }),
+  setPitch:          (v) => set({ pitch: v }),
+  setPosition:       (v) => set({ position: v }),
+  setScatter:        (v) => set({ scatter: v }),
+  setPanSpread:      (v) => set({ panSpread: v }),
+  setMasterGain:     (v) => set({ masterGain: v }),
+  setPlaying:        (v) => set({ isPlaying: v }),
+  setNodes:          (nodes) => set({ nodes }),
+  setCurrentNode:    (i) => set({ currentNodeIndex: i }),
+  setAudioLoaded:    (v, fileName = '') => set({ audioLoaded: v, fileName }),
+  setAttractorType:  (t) => set({ attractorType: t }),
+  setAttractorLinked:(v) => set({ attractorLinked: v }),
+  setAttractorSpeed: (v) => set({ attractorSpeed: v }),
+  setAttractorP1:    (v) => set({ attractorP1: v }),
+  setAttractorP2:    (v) => set({ attractorP2: v }),
+  setAttractorP3:    (v) => set({ attractorP3: v }),
+  setAttractorState: (nx, ny, nz) => set({ attractorNX: nx, attractorNY: ny, attractorNZ: nz }),
 }))
