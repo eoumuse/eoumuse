@@ -9,17 +9,37 @@ import { AgentSphere } from '../three/AgentSphere'
 import { AttractorEngine } from '../audio/AttractorEngine'
 import { audioEngine } from '../audio/AudioEngine'
 
+// Project mouse (0..1) onto plane perpendicular to camera through attractor center
+function projectMouseTo3D(
+  cx: number, cy: number,
+  camera: THREE.PerspectiveCamera,
+  center: THREE.Vector3,
+): THREE.Vector3 | null {
+  const raycaster = new THREE.Raycaster()
+  raycaster.setFromCamera(new THREE.Vector2(cx * 2 - 1, -(cy * 2 - 1)), camera)
+  const camDir = camera.getWorldDirection(new THREE.Vector3())
+  const plane  = new THREE.Plane().setFromNormalAndCoplanarPoint(camDir, center)
+  const hit    = new THREE.Vector3()
+  return raycaster.ray.intersectPlane(plane, hit) ? hit : null
+}
+
 export function GeometryView3D() {
-  const canvasRef      = useRef<HTMLCanvasElement>(null)
-  const sceneRef       = useRef<SceneManager | null>(null)
-  const bgRef          = useRef<AttractorParticles | null>(null)
-  const liveVisRef     = useRef<AttractorVisualizer | null>(null)
-  const nodeMeshRef    = useRef<NodeMesh | null>(null)
-  const agentRef       = useRef<AgentSphere | null>(null)
-  const engineRef      = useRef<AttractorEngine | null>(null)
-  const lastTickRef    = useRef<number>(performance.now())
-  const perturbRef     = useRef<THREE.Mesh | null>(null)
-  const isPerturbingRef = useRef(false)
+  const canvasRef    = useRef<HTMLCanvasElement>(null)
+  const sceneRef     = useRef<SceneManager | null>(null)
+  const bgRef        = useRef<AttractorParticles | null>(null)
+  const liveVisRef   = useRef<AttractorVisualizer | null>(null)
+  const nodeMeshRef  = useRef<NodeMesh | null>(null)
+  const agentRef     = useRef<AgentSphere | null>(null)
+  const engineRef    = useRef<AttractorEngine | null>(null)
+  const lastTickRef  = useRef<number>(performance.now())
+
+  // Interaction state (refs = no re-render, read live in animation loop)
+  const mousePosRef     = useRef({ cx: 0.5, cy: 0.5 })
+  const isOverRef       = useRef(false)
+  const isGrabbingRef   = useRef(false)
+  const perturbSphRef   = useRef<THREE.Mesh | null>(null)
+  const connLineRef     = useRef<THREE.Line | null>(null)
+  const connPosRef      = useRef<THREE.BufferAttribute | null>(null)
 
   const nodes            = useSynthStore((s) => s.nodes)
   const currentNodeIndex = useSynthStore((s) => s.currentNodeIndex)
@@ -32,16 +52,13 @@ export function GeometryView3D() {
     const sm = new SceneManager(canvas)
     sceneRef.current = sm
 
-    // Faint static Lorenz cloud in the background — depth/context reference
     const bg = new AttractorParticles(2000)
     sm.scene.add(bg.points)
     bgRef.current = bg
 
-    // Live attractor engine — this IS the synthesis engine
     const engine = new AttractorEngine('lorenz')
     engineRef.current = engine
 
-    // Live trajectory line — shows the attractor's shape as it evolves
     const liveVis = new AttractorVisualizer(sm.scene, engine.trailLength)
     liveVisRef.current = liveVis
 
@@ -52,114 +69,135 @@ export function GeometryView3D() {
     sm.scene.add(agent.group)
     agentRef.current = agent
 
-    // Perturbation cursor — glowing wireframe sphere at the drag target
-    const perturbGeo = new THREE.SphereGeometry(0.18, 10, 10)
+    // Perturbation cursor sphere
+    const perturbGeo = new THREE.SphereGeometry(0.14, 10, 10)
     const perturbMat = new THREE.MeshBasicMaterial({
-      color: 0xffd840,
-      wireframe: true,
-      transparent: true,
-      opacity: 0,
+      color: 0xffd840, wireframe: true, transparent: true, opacity: 0,
     })
-    const perturbSphere = new THREE.Mesh(perturbGeo, perturbMat)
-    sm.scene.add(perturbSphere)
-    perturbRef.current = perturbSphere
+    const perturbSph = new THREE.Mesh(perturbGeo, perturbMat)
+    sm.scene.add(perturbSph)
+    perturbSphRef.current = perturbSph
 
-    // ── Right-click drag = attractor perturbation ────────────────────────
-    const getCanvasNorm = (e: PointerEvent) => {
-      const rect = canvas.getBoundingClientRect()
-      return {
-        cx: (e.clientX - rect.left) / rect.width,
-        cy: (e.clientY - rect.top)  / rect.height,
-      }
+    // Connection line: attractor head ↔ mouse target
+    const connGeo = new THREE.BufferGeometry()
+    const connPos = new THREE.BufferAttribute(new Float32Array(6), 3)
+    connGeo.setAttribute('position', connPos)
+    connPosRef.current = connPos
+    const connMat = new THREE.LineBasicMaterial({
+      color: 0xd4a020, transparent: true, opacity: 0,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    })
+    const connLine = new THREE.Line(connGeo, connMat)
+    sm.scene.add(connLine)
+    connLineRef.current = connLine
+
+    // ── Mouse event handlers ──────────────────────────────────────────────
+    const norm = (e: MouseEvent) => {
+      const r = canvas.getBoundingClientRect()
+      return { cx: (e.clientX - r.left) / r.width, cy: (e.clientY - r.top) / r.height }
     }
 
-    const applyPerturb = (cx: number, cy: number) => {
-      const eng = engineRef.current
-      if (!eng) return
-      const target = eng.canvasToAttractorCoords(cx, cy)
-      eng.perturbTarget   = target
-      eng.perturbStrength = 1
+    let lastClickTime = 0
+    let clickStartPos = { x: 0, y: 0 }
 
-      // Show sphere at world-space position
-      const s = eng.scaleForType()
-      perturbSphere.position.set(target.x * s, target.y * s, target.z * s)
-      ;(perturbSphere.material as THREE.MeshBasicMaterial).opacity = 0.7
-    }
-
-    const onPointerDown = (e: PointerEvent) => {
-      if (e.button !== 2) return  // only right-click
-      e.preventDefault()
-      isPerturbingRef.current = true
-      canvas.setPointerCapture(e.pointerId)
-      const { cx, cy } = getCanvasNorm(e)
-      applyPerturb(cx, cy)
-    }
-
-    const onPointerMove = (e: PointerEvent) => {
-      if (!isPerturbingRef.current) return
-      const { cx, cy } = getCanvasNorm(e)
-      applyPerturb(cx, cy)
-    }
-
-    const onPointerUp = (e: PointerEvent) => {
-      if (e.button !== 2) return
-      isPerturbingRef.current = false
+    const onMove     = (e: MouseEvent) => { mousePosRef.current = norm(e) }
+    const onEnter    = ()              => { isOverRef.current = true }
+    const onLeave    = ()              => {
+      isOverRef.current     = false
+      isGrabbingRef.current = false
       const eng = engineRef.current
       if (eng) eng.perturbStrength = 0
-      ;(perturbSphere.material as THREE.MeshBasicMaterial).opacity = 0
+      ;(perturbSph.material as THREE.MeshBasicMaterial).opacity = 0
+      ;(connLine.material  as THREE.LineBasicMaterial ).opacity = 0
     }
+    const onDown     = (e: MouseEvent) => {
+      if (e.button !== 0) return
+      isGrabbingRef.current = true
+      clickStartPos = { x: e.clientX, y: e.clientY }
+    }
+    const onUp       = (e: MouseEvent) => { if (e.button === 0) isGrabbingRef.current = false }
+    const onClick    = (e: MouseEvent) => {
+      // Double-click detection → chaos kick
+      const now = Date.now()
+      const dx  = e.clientX - clickStartPos.x
+      const dy  = e.clientY - clickStartPos.y
+      if (Math.sqrt(dx*dx + dy*dy) < 6 && now - lastClickTime < 380) {
+        engineRef.current?.kickChaos()
+        ;(perturbSph.material as THREE.MeshBasicMaterial).opacity = 1.0
+        setTimeout(() => {
+          ;(perturbSph.material as THREE.MeshBasicMaterial).opacity = isOverRef.current ? 0.28 : 0
+        }, 200)
+      }
+      lastClickTime = now
+    }
+    const noCtx = (e: Event) => e.preventDefault()
 
-    const onContextMenu = (e: Event) => e.preventDefault()
+    canvas.addEventListener('mousemove',   onMove)
+    canvas.addEventListener('mouseenter',  onEnter)
+    canvas.addEventListener('mouseleave',  onLeave)
+    canvas.addEventListener('mousedown',   onDown)
+    canvas.addEventListener('mouseup',     onUp)
+    canvas.addEventListener('click',       onClick)
+    canvas.addEventListener('contextmenu', noCtx)
 
-    canvas.addEventListener('pointerdown',  onPointerDown)
-    canvas.addEventListener('pointermove',  onPointerMove)
-    canvas.addEventListener('pointerup',    onPointerUp)
-    canvas.addEventListener('contextmenu',  onContextMenu)
+    // ── Animation loop ────────────────────────────────────────────────────
+    const attractorCenter = new THREE.Vector3(0, 0, 2)
 
     sm.startAnimation((time) => {
       const now = performance.now()
-      const dt = Math.min(now - lastTickRef.current, 50)
+      const dt  = Math.min(now - lastTickRef.current, 50)
       lastTickRef.current = now
 
       const eng = engineRef.current
       if (eng) {
         const store = useSynthStore.getState()
 
-        // Sync attractor type (reset if changed)
-        if (eng.params.type !== store.attractorType) {
-          eng.setType(store.attractorType)
-        }
-
-        // Sync parameters from store to engine
-        eng.params.p1    = store.attractorP1
-        eng.params.p2    = store.attractorP2
-        eng.params.p3    = store.attractorP3
-        eng.params.speed = store.attractorSpeed
-
-        eng.tick(dt)
-
-        // Push normalized attractor state back to store (for XYZ readout panel)
-        store.setAttractorState(eng.state.nx, eng.state.ny, eng.state.nz, eng.state.vortexPitch)
-
-        // === CORE: when linked, attractor coordinates drive the grain engine ===
-        if (store.attractorLinked && store.isPlaying) {
-          audioEngine.position  = eng.state.nx             // x → buffer position 0..1
-          audioEngine.pitch     = eng.state.vortexPitch    // vortex orbital angle → pitch
-          audioEngine.grainSize = 10 + eng.state.nz * 1990 // z → 10..2000ms
-        }
-
-        // Sync vortex pitch settings from store to engine
+        if (eng.params.type !== store.attractorType) eng.setType(store.attractorType)
+        eng.params.p1         = store.attractorP1
+        eng.params.p2         = store.attractorP2
+        eng.params.p3         = store.attractorP3
+        eng.params.speed      = store.attractorSpeed
         eng.semitonesPerOrbit = store.semitonesPerOrbit
         eng.pitchWrap         = store.pitchWrap
 
-        // Move agent orb to follow the live attractor position in 3D space
-        const s = eng.scaleForType()
-        agent.setTargetPosition(
-          eng.state.x * s,
-          eng.state.y * s,
-          eng.state.z * s,
-        )
+        // Mouse → 3D influence
+        const isOver  = isOverRef.current
+        const isGrab  = isGrabbingRef.current
+        const { cx, cy } = mousePosRef.current
+        const hit = isOver ? projectMouseTo3D(cx, cy, sm.camera, attractorCenter) : null
 
+        if (hit) {
+          const s = eng.scaleForType()
+          eng.perturbTarget   = { x: hit.x / s, y: hit.y / s, z: hit.z / s }
+          eng.perturbStrength = isGrab ? 1.2 : 0.13
+
+          perturbSph.position.copy(hit)
+          ;(perturbSph.material as THREE.MeshBasicMaterial).opacity = isGrab ? 0.85 : 0.28
+
+          // Update connection line: head → target
+          const cp = connPosRef.current!
+          cp.setXYZ(0, eng.state.x * s, eng.state.y * s, eng.state.z * s)
+          cp.setXYZ(1, hit.x, hit.y, hit.z)
+          cp.needsUpdate = true
+          ;(connLine.material as THREE.LineBasicMaterial).opacity = isGrab ? 0.55 : 0.18
+        } else {
+          eng.perturbStrength = 0
+          ;(perturbSph.material as THREE.MeshBasicMaterial).opacity = 0
+          ;(connLine.material  as THREE.LineBasicMaterial ).opacity = 0
+        }
+
+        eng.tick(dt)
+
+        store.setAttractorState(eng.state.nx, eng.state.ny, eng.state.nz, eng.state.vortexPitch)
+
+        if (store.attractorLinked && store.isPlaying) {
+          audioEngine.position  = eng.state.nx
+          audioEngine.pitch     = eng.state.vortexPitch
+          audioEngine.grainSize = 10 + eng.state.nz * 1990
+        }
+
+        const s = eng.scaleForType()
+        agent.setTargetPosition(eng.state.x * s, eng.state.y * s, eng.state.z * s)
         liveVis.update(eng)
       }
 
@@ -167,36 +205,37 @@ export function GeometryView3D() {
       agent.update(time)
     })
 
-    const handleResize = () => sm.resize(canvas.clientWidth, canvas.clientHeight)
-    window.addEventListener('resize', handleResize)
+    const onResize = () => sm.resize(canvas.clientWidth, canvas.clientHeight)
+    window.addEventListener('resize', onResize)
 
     return () => {
-      window.removeEventListener('resize', handleResize)
-      canvas.removeEventListener('pointerdown',  onPointerDown)
-      canvas.removeEventListener('pointermove',  onPointerMove)
-      canvas.removeEventListener('pointerup',    onPointerUp)
-      canvas.removeEventListener('contextmenu',  onContextMenu)
+      window.removeEventListener('resize', onResize)
+      canvas.removeEventListener('mousemove',   onMove)
+      canvas.removeEventListener('mouseenter',  onEnter)
+      canvas.removeEventListener('mouseleave',  onLeave)
+      canvas.removeEventListener('mousedown',   onDown)
+      canvas.removeEventListener('mouseup',     onUp)
+      canvas.removeEventListener('click',       onClick)
+      canvas.removeEventListener('contextmenu', noCtx)
       sm.dispose()
       bg.dispose()
       nodeMesh.dispose()
       agent.dispose()
       perturbGeo.dispose()
+      connGeo.dispose()
     }
   }, [])
 
-  // Update audio onset node sparkles when a new file is loaded
   useEffect(() => {
-    const sm       = sceneRef.current
-    const nodeMesh = nodeMeshRef.current
-    if (!sm || !nodeMesh) return
-    nodeMesh.updateNodes(nodes, sm.scene, currentNodeIndex)
+    const sm = sceneRef.current
+    const nm = nodeMeshRef.current
+    if (!sm || !nm) return
+    nm.updateNodes(nodes, sm.scene, currentNodeIndex)
   }, [nodes, currentNodeIndex])
 
-  // When not linked to attractor, advance through onset nodes sequentially
   useEffect(() => {
     const store = useSynthStore.getState()
     if (!isPlaying || nodes.length === 0 || store.attractorLinked) return
-
     const interval = setInterval(() => {
       const s = useSynthStore.getState()
       if (s.attractorLinked) return
@@ -207,7 +246,6 @@ export function GeometryView3D() {
         audioEngine.position = node.time / audioEngine.buffer.duration
       }
     }, 700)
-
     return () => clearInterval(interval)
   }, [isPlaying, nodes])
 
@@ -215,17 +253,17 @@ export function GeometryView3D() {
     <div style={{ position: 'absolute', inset: 0 }}>
       <canvas
         ref={canvasRef}
-        style={{ width: '100%', height: '100%', display: 'block' }}
+        style={{ width: '100%', height: '100%', display: 'block', cursor: 'crosshair' }}
       />
-      {/* Hint overlay */}
       <div style={{
         position: 'absolute', bottom: 10, right: 12,
         fontSize: '9px', letterSpacing: '0.08em',
-        color: 'rgba(200,160,50,0.45)',
+        color: 'rgba(200,160,50,0.38)',
         pointerEvents: 'none', userSelect: 'none',
-        textTransform: 'uppercase',
+        textTransform: 'uppercase', lineHeight: '1.8', textAlign: 'right',
       }}>
-        Left drag: orbit　·　Right drag: distort　·　Scroll: zoom
+        Hover: drift　·　Drag: pull　·　Right drag: orbit<br />
+        Double-click: chaos kick　·　Scroll: zoom
       </div>
     </div>
   )

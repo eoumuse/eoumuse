@@ -42,8 +42,14 @@ export class SceneManager {
     this.controls.target.set(0, 0, 2)
     this.controls.minDistance = 2
     this.controls.maxDistance = 30
-    this.controls.enablePan = false  // free right-click for attractor perturbation
-    // Pause auto-rotate while user is dragging, resume after 3s idle
+    this.controls.enablePan = false
+    // Right drag = orbit; left drag is intercepted by perturbation handler
+    this.controls.mouseButtons = {
+      LEFT:   -1 as unknown as THREE.MOUSE,  // disabled — left used for perturbation
+      MIDDLE: THREE.MOUSE.DOLLY,
+      RIGHT:  THREE.MOUSE.ROTATE,
+    }
+    // Pause auto-rotate on any interaction, resume after 4s idle
     canvas.addEventListener('pointerdown', () => {
       this.controls.autoRotate = false
       if (this.autoRotateTimeout) clearTimeout(this.autoRotateTimeout)
@@ -52,7 +58,7 @@ export class SceneManager {
       if (this.autoRotateTimeout) clearTimeout(this.autoRotateTimeout)
       this.autoRotateTimeout = setTimeout(() => {
         this.controls.autoRotate = true
-      }, 3000)
+      }, 4000)
     })
 
     // Lights

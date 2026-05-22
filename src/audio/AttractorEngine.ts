@@ -233,6 +233,23 @@ export class AttractorEngine {
     }
   }
 
+  /** Kick the attractor into a completely different region — chaotic jump. */
+  kickChaos() {
+    const b = BOUNDS[this.params.type]
+    const rx = (b.x[1] - b.x[0]) * 0.7
+    const ry = (b.y[1] - b.y[0]) * 0.7
+    const rz = (b.z[1] - b.z[0]) * 0.7
+    const cx = (b.x[0] + b.x[1]) / 2
+    const cy = (b.y[0] + b.y[1]) / 2
+    const cz = (b.z[0] + b.z[1]) / 2
+    const nx = cx + (Math.random() - 0.5) * rx
+    const ny = cy + (Math.random() - 0.5) * ry
+    const nz = cz + Math.abs(Math.random() - 0.5) * rz
+    this._setState(nx, ny, nz)
+    this.trailHead = 0
+    this.trailFilled = false
+  }
+
   getDefaultParams(type: AttractorType): AttractorParams {
     return { ...DEFAULTS[type] }
   }
