@@ -72,14 +72,18 @@ export function GeometryView3D() {
         eng.tick(dt)
 
         // Push normalized attractor state back to store (for XYZ readout panel)
-        store.setAttractorState(eng.state.nx, eng.state.ny, eng.state.nz)
+        store.setAttractorState(eng.state.nx, eng.state.ny, eng.state.nz, eng.state.vortexPitch)
 
         // === CORE: when linked, attractor coordinates drive the grain engine ===
         if (store.attractorLinked && store.isPlaying) {
-          audioEngine.position  = eng.state.nx                   // x → buffer position 0..1
-          audioEngine.pitch     = (eng.state.ny - 0.5) * 48     // y → -24..+24 semitones
-          audioEngine.grainSize = 10 + eng.state.nz * 1990      // z → 10..2000ms
+          audioEngine.position  = eng.state.nx             // x → buffer position 0..1
+          audioEngine.pitch     = eng.state.vortexPitch    // vortex orbital angle → pitch
+          audioEngine.grainSize = 10 + eng.state.nz * 1990 // z → 10..2000ms
         }
+
+        // Sync vortex pitch settings from store to engine
+        eng.semitonesPerOrbit = store.semitonesPerOrbit
+        eng.pitchWrap         = store.pitchWrap
 
         // Move agent orb to follow the live attractor position in 3D space
         const s = eng.scaleForType()

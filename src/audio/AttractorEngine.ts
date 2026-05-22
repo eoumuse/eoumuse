@@ -4,8 +4,15 @@
  * the math of chaos IS the synthesis engine.
  *
  * x → audio buffer read position (0..1)
- * y → pitch shift (-24..+24 semitones)
  * z → grain size (10ms..2000ms)
+ *
+ * Pitch — VORTEX MODEL:
+ *   Instead of mapping y linearly to pitch, we track the cumulative orbital
+ *   angle of the trajectory around the attractor's center (atan2 in x-y plane).
+ *   Each complete orbit raises pitch by `semitonesPerOrbit` semitones.
+ *   In chaotic regimes the attractor orbits faster → pitch ascends faster,
+ *   creating the sensation of a sonic vortex.
+ *   The pitch wraps in a 48-semitone window (Shepard-tone-like infinite rise).
  */
 
 export type AttractorType = 'lorenz' | 'rossler' | 'thomas'
@@ -18,6 +25,10 @@ export interface AttractorState {
   nx: number
   ny: number
   nz: number
+  /** Pitch derived from cumulative orbital angle (semitones, -24..+24 wrapped) */
+  vortexPitch: number
+  /** Raw cumulative orbits — useful for visualizing how many laps the trajectory made */
+  totalOrbits: number
 }
 
 export interface AttractorParams {
@@ -72,9 +83,29 @@ function normalize(v: number, min: number, max: number): number {
   return Math.max(0, Math.min(1, (v - min) / (max - min)))
 }
 
+// Semitones added to pitch per full orbit around the attractor center.
+// One orbit = full 2π rotation in the x-y plane.
+export const DEFAULT_SEMITONES_PER_ORBIT = 7   // a fifth per orbit feels musical
+
+// The pitch window: vortex pitch wraps within ±this value (Shepard-tone illusion).
+const PITCH_HALF_RANGE = 24
+
 export class AttractorEngine {
   params: AttractorParams
-  state: AttractorState = { x: 0.1, y: 0, z: 0, nx: 0.5, ny: 0.5, nz: 0.5 }
+  state: AttractorState = {
+    x: 0.1, y: 0, z: 0,
+    nx: 0.5, ny: 0.5, nz: 0.5,
+    vortexPitch: 0, totalOrbits: 0,
+  }
+
+  // Vortex pitch settings
+  semitonesPerOrbit = DEFAULT_SEMITONES_PER_ORBIT
+  /** When true, pitch wraps (Shepard-tone infinite rise). When false, clamps at ±24. */
+  pitchWrap = true
+
+  // Internal angle tracking for vortex pitch
+  private _prevAngle = 0
+  private _cumulativeAngle = 0
 
   // Rolling history for 3D trail rendering (last N positions)
   trail: Float32Array  // x0,y0,z0, x1,y1,z1, ...
@@ -94,7 +125,9 @@ export class AttractorEngine {
     const s = type === 'lorenz'  ? { x: 0.1, y: 0,   z: 0 }
              : type === 'rossler' ? { x: 0.1, y: 0,   z: 0 }
              :                      { x: 0.1, y: 0.1, z: 0 }
-    this.state = { ...s, nx: 0.5, ny: 0.5, nz: 0.5 }
+    this.state = { ...s, nx: 0.5, ny: 0.5, nz: 0.5, vortexPitch: 0, totalOrbits: 0 }
+    this._prevAngle = 0
+    this._cumulativeAngle = 0
     this.trailHead = 0
     this.trailFilled = false
     this._warmup(2000)
@@ -107,6 +140,9 @@ export class AttractorEngine {
       const next = this._step(x, y, z, dt)
       x = next.x; y = next.y; z = next.z
     }
+    // Initialise angle tracking from warmed-up position
+    this._prevAngle = Math.atan2(y, x)
+    this._cumulativeAngle = 0
     this._setState(x, y, z)
   }
 
@@ -120,11 +156,35 @@ export class AttractorEngine {
 
   private _setState(x: number, y: number, z: number) {
     const b = BOUNDS[this.params.type]
+
+    // --- Vortex pitch: track cumulative orbital angle in x-y plane ---
+    const angle = Math.atan2(y, x)
+    let delta = angle - this._prevAngle
+    // Unwrap delta to [-π, π] to avoid 2π jumps
+    if (delta >  Math.PI) delta -= 2 * Math.PI
+    if (delta < -Math.PI) delta += 2 * Math.PI
+    this._cumulativeAngle += delta
+    this._prevAngle = angle
+
+    const totalOrbits = this._cumulativeAngle / (2 * Math.PI)
+    const rawPitch = totalOrbits * this.semitonesPerOrbit
+    const range = PITCH_HALF_RANGE * 2  // 48 semitones window
+
+    let vortexPitch: number
+    if (this.pitchWrap) {
+      // Sawtooth wrap: ascends then snaps back — Shepard-tone infinite-rise illusion
+      vortexPitch = ((rawPitch % range) + range) % range - PITCH_HALF_RANGE
+    } else {
+      vortexPitch = Math.max(-PITCH_HALF_RANGE, Math.min(PITCH_HALF_RANGE, rawPitch))
+    }
+
     this.state = {
       x, y, z,
       nx: normalize(x, b.x[0], b.x[1]),
       ny: normalize(y, b.y[0], b.y[1]),
       nz: normalize(z, b.z[0], b.z[1]),
+      vortexPitch,
+      totalOrbits,
     }
   }
 

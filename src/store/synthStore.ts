@@ -40,6 +40,13 @@ interface SynthState {
   attractorNY: number
   attractorNZ: number
 
+  // Vortex pitch settings
+  semitonesPerOrbit: number  // semitones added per full orbit (1–24)
+  pitchWrap: boolean         // true = Shepard-tone wrap, false = clamp at ±24
+
+  setSemitonesPerOrbit: (v: number) => void
+  setPitchWrap: (v: boolean) => void
+
   // Actions
   setGrainSize: (v: number) => void
   setDensity: (v: number) => void
@@ -58,7 +65,8 @@ interface SynthState {
   setAttractorP1: (v: number) => void
   setAttractorP2: (v: number) => void
   setAttractorP3: (v: number) => void
-  setAttractorState: (nx: number, ny: number, nz: number) => void
+  attractorVortexPitch: number  // live vortex pitch in semitones (-24..+24)
+  setAttractorState: (nx: number, ny: number, nz: number, vortexPitch?: number) => void
 }
 
 export const useSynthStore = create<SynthState>((set) => ({
@@ -86,6 +94,10 @@ export const useSynthStore = create<SynthState>((set) => ({
   attractorNY: 0.5,
   attractorNZ: 0.5,
 
+  semitonesPerOrbit: 7,
+  pitchWrap: true,
+  attractorVortexPitch: 0,
+
   setGrainSize:      (v) => set({ grainSize: v }),
   setDensity:        (v) => set({ density: v }),
   setPitch:          (v) => set({ pitch: v }),
@@ -97,11 +109,13 @@ export const useSynthStore = create<SynthState>((set) => ({
   setNodes:          (nodes) => set({ nodes }),
   setCurrentNode:    (i) => set({ currentNodeIndex: i }),
   setAudioLoaded:    (v, fileName = '') => set({ audioLoaded: v, fileName }),
+  setSemitonesPerOrbit: (v) => set({ semitonesPerOrbit: v }),
+  setPitchWrap:         (v) => set({ pitchWrap: v }),
   setAttractorType:  (t) => set({ attractorType: t }),
   setAttractorLinked:(v) => set({ attractorLinked: v }),
   setAttractorSpeed: (v) => set({ attractorSpeed: v }),
   setAttractorP1:    (v) => set({ attractorP1: v }),
   setAttractorP2:    (v) => set({ attractorP2: v }),
   setAttractorP3:    (v) => set({ attractorP3: v }),
-  setAttractorState: (nx, ny, nz) => set({ attractorNX: nx, attractorNY: ny, attractorNZ: nz }),
+  setAttractorState: (nx, ny, nz, vortexPitch = 0) => set({ attractorNX: nx, attractorNY: ny, attractorNZ: nz, attractorVortexPitch: vortexPitch }),
 }))

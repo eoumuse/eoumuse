@@ -17,22 +17,26 @@ const TYPE_COLORS: Record<AttractorType, string> = {
 }
 
 export function AttractorPanel() {
-  const type        = useSynthStore((s) => s.attractorType)
-  const linked      = useSynthStore((s) => s.attractorLinked)
-  const speed       = useSynthStore((s) => s.attractorSpeed)
-  const p1          = useSynthStore((s) => s.attractorP1)
-  const p2          = useSynthStore((s) => s.attractorP2)
-  const p3          = useSynthStore((s) => s.attractorP3)
-  const nx          = useSynthStore((s) => s.attractorNX)
-  const ny          = useSynthStore((s) => s.attractorNY)
-  const nz          = useSynthStore((s) => s.attractorNZ)
+  const type             = useSynthStore((s) => s.attractorType)
+  const linked           = useSynthStore((s) => s.attractorLinked)
+  const speed            = useSynthStore((s) => s.attractorSpeed)
+  const p1               = useSynthStore((s) => s.attractorP1)
+  const p2               = useSynthStore((s) => s.attractorP2)
+  const p3               = useSynthStore((s) => s.attractorP3)
+  const nx               = useSynthStore((s) => s.attractorNX)
+  const nz               = useSynthStore((s) => s.attractorNZ)
+  const vortexPitch      = useSynthStore((s) => s.attractorVortexPitch)
+  const semitonesPerOrbit = useSynthStore((s) => s.semitonesPerOrbit)
+  const pitchWrap        = useSynthStore((s) => s.pitchWrap)
 
-  const setType     = useSynthStore((s) => s.setAttractorType)
-  const setLinked   = useSynthStore((s) => s.setAttractorLinked)
-  const setSpeed    = useSynthStore((s) => s.setAttractorSpeed)
-  const setP1       = useSynthStore((s) => s.setAttractorP1)
-  const setP2       = useSynthStore((s) => s.setAttractorP2)
-  const setP3       = useSynthStore((s) => s.setAttractorP3)
+  const setType              = useSynthStore((s) => s.setAttractorType)
+  const setLinked            = useSynthStore((s) => s.setAttractorLinked)
+  const setSpeed             = useSynthStore((s) => s.setAttractorSpeed)
+  const setP1                = useSynthStore((s) => s.setAttractorP1)
+  const setP2                = useSynthStore((s) => s.setAttractorP2)
+  const setP3                = useSynthStore((s) => s.setAttractorP3)
+  const setSemitonesPerOrbit = useSynthStore((s) => s.setSemitonesPerOrbit)
+  const setPitchWrap         = useSynthStore((s) => s.setPitchWrap)
 
   const ranges = ATTRACTOR_RANGES[type]
   const accent = TYPE_COLORS[type]
@@ -107,7 +111,7 @@ export function AttractorPanel() {
           </button>
         </div>
 
-        {/* Live XYZ readout */}
+        {/* Live state readout: X / Vortex Pitch / Z */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(3, 1fr)',
@@ -116,46 +120,103 @@ export function AttractorPanel() {
           borderRadius: '8px',
           padding: '6px',
         }}>
+          {/* X → buffer position */}
           {[
-            { label: 'X → POS', val: nx, color: '#FF2D9B' },
-            { label: 'Y → PITCH', val: ny, color: '#FFE629' },
-            { label: 'Z → GRAIN', val: nz, color: '#00E5FF' },
-          ].map(({ label, val, color }) => (
+            { label: 'X → POS',   val: nx, norm: nx,                              color: '#FF2D9B' },
+            { label: 'Z → GRAIN', val: nz, norm: nz,                              color: '#00E5FF' },
+          ].map(({ label, val, norm, color }) => (
             <div key={label} style={{ textAlign: 'center' }}>
-              <div style={{
-                fontSize: '8px',
-                color: 'rgba(255,255,255,0.35)',
-                letterSpacing: '0.06em',
-                marginBottom: '2px',
-              }}>
+              <div style={{ fontSize: '8px', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em', marginBottom: '2px' }}>
                 {label}
               </div>
-              {/* Mini bar */}
-              <div style={{
-                height: '3px',
-                borderRadius: '2px',
-                background: 'rgba(255,255,255,0.08)',
-                overflow: 'hidden',
-                marginBottom: '2px',
-              }}>
-                <div style={{
-                  height: '100%',
-                  width: `${val * 100}%`,
-                  background: color,
-                  boxShadow: `0 0 6px ${color}`,
-                  transition: 'width 0.05s',
-                }} />
+              <div style={{ height: '3px', borderRadius: '2px', background: 'rgba(255,255,255,0.08)', overflow: 'hidden', marginBottom: '2px' }}>
+                <div style={{ height: '100%', width: `${norm * 100}%`, background: color, boxShadow: `0 0 6px ${color}`, transition: 'width 0.05s' }} />
               </div>
-              <div style={{
-                fontSize: '9px',
-                color,
-                fontVariantNumeric: 'tabular-nums',
-                textShadow: `0 0 6px ${color}`,
-              }}>
+              <div style={{ fontSize: '9px', color, fontVariantNumeric: 'tabular-nums', textShadow: `0 0 6px ${color}` }}>
                 {val.toFixed(2)}
               </div>
             </div>
           ))}
+
+          {/* Vortex pitch meter — shows current semitone value */}
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '8px', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em', marginBottom: '2px' }}>
+              ↑ VORTEX
+            </div>
+            {/* Centred bar: negative = left, positive = right */}
+            <div style={{ height: '3px', borderRadius: '2px', background: 'rgba(255,255,255,0.08)', overflow: 'hidden', position: 'relative', marginBottom: '2px' }}>
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                height: '100%',
+                width: `${Math.abs(vortexPitch) / 24 * 50}%`,
+                left: vortexPitch >= 0 ? '50%' : `${50 - Math.abs(vortexPitch) / 24 * 50}%`,
+                background: '#FFE629',
+                boxShadow: '0 0 6px #FFE629',
+                transition: 'all 0.05s',
+              }} />
+              {/* Centre tick */}
+              <div style={{ position: 'absolute', top: 0, left: '50%', width: '1px', height: '100%', background: 'rgba(255,255,255,0.3)' }} />
+            </div>
+            <div style={{ fontSize: '9px', color: '#FFE629', fontVariantNumeric: 'tabular-nums', textShadow: '0 0 6px #FFE629' }}>
+              {vortexPitch >= 0 ? '+' : ''}{vortexPitch.toFixed(1)} st
+            </div>
+          </div>
+        </div>
+
+        {/* Vortex pitch controls */}
+        <div style={{
+          background: 'rgba(255,230,41,0.04)',
+          border: '1px solid rgba(255,230,41,0.18)',
+          borderRadius: '10px',
+          padding: '8px 10px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+        }}>
+          <div style={{ fontSize: '8px', color: '#FFE629', letterSpacing: '0.12em', fontWeight: 700, opacity: 0.8 }}>
+            ↑ VORTEX PITCH  <span style={{ opacity: 0.5, fontWeight: 400 }}>// orbital angle → semitones</span>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <Knob
+              value={semitonesPerOrbit}
+              min={1}
+              max={24}
+              label="ST/ORBIT"
+              color="#FFE629"
+              onChange={setSemitonesPerOrbit}
+              defaultValue={7}
+              formatValue={(v) => `+${v.toFixed(0)}`}
+            />
+            <div style={{ flex: 1 }}>
+              {/* Wrap / Clamp toggle */}
+              <button
+                onClick={() => setPitchWrap(!pitchWrap)}
+                style={{
+                  width: '100%',
+                  padding: '5px 6px',
+                  borderRadius: '8px',
+                  border: `1px solid ${pitchWrap ? '#FFE62966' : 'rgba(255,255,255,0.12)'}`,
+                  background: pitchWrap ? 'rgba(255,230,41,0.1)' : 'rgba(255,255,255,0.03)',
+                  color: pitchWrap ? '#FFE629' : 'rgba(255,255,255,0.3)',
+                  fontSize: '8px',
+                  fontWeight: 700,
+                  letterSpacing: '0.08em',
+                  cursor: 'pointer',
+                  marginBottom: '4px',
+                  display: 'block',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {pitchWrap ? '∞ SHEPHERD WRAP' : '⊢ CLAMP ±24st'}
+              </button>
+              <div style={{ fontSize: '7.5px', color: 'rgba(255,255,255,0.25)', lineHeight: 1.4, padding: '0 2px' }}>
+                {pitchWrap
+                  ? 'Pitch loops endlessly upward like a sonic vortex'
+                  : 'Pitch rises then freezes at ceiling'}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Speed + P1/P2/P3 knobs */}
