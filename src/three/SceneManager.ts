@@ -42,6 +42,7 @@ export class SceneManager {
     this.controls.target.set(0, 0, 2)
     this.controls.minDistance = 2
     this.controls.maxDistance = 30
+    this.controls.enablePan = false  // free right-click for attractor perturbation
     // Pause auto-rotate while user is dragging, resume after 3s idle
     canvas.addEventListener('pointerdown', () => {
       this.controls.autoRotate = false

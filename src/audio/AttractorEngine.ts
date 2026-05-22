@@ -98,6 +98,10 @@ export class AttractorEngine {
     vortexPitch: 0, totalOrbits: 0,
   }
 
+  // Perturbation: a gentle force that pulls the trajectory toward a target point
+  perturbTarget: { x: number; y: number; z: number } | null = null
+  perturbStrength = 0  // 0..1
+
   // Vortex pitch settings
   semitonesPerOrbit = DEFAULT_SEMITONES_PER_ORBIT
   /** When true, pitch wraps (Shepard-tone infinite rise). When false, clamps at ±24. */
@@ -199,6 +203,14 @@ export class AttractorEngine {
       const next = this._step(x, y, z, dt)
       x = next.x; y = next.y; z = next.z
 
+      // Apply perturbation force — pulls trajectory toward target point
+      if (this.perturbTarget !== null && this.perturbStrength > 0) {
+        const k = this.perturbStrength * 0.12
+        x += k * (this.perturbTarget.x - x)
+        y += k * (this.perturbTarget.y - y)
+        z += k * (this.perturbTarget.z - z) * 0.5
+      }
+
       // record trail
       const idx = this.trailHead * 3
       this.trail[idx]     = x
@@ -209,6 +221,16 @@ export class AttractorEngine {
     }
 
     this._setState(x, y, z)
+  }
+
+  /** Map canvas position (0..1) to attractor coordinate space for perturbation. */
+  canvasToAttractorCoords(cx: number, cy: number): { x: number; y: number; z: number } {
+    const b = BOUNDS[this.params.type]
+    return {
+      x: b.x[0] + cx * (b.x[1] - b.x[0]),
+      y: b.y[1] - cy * (b.y[1] - b.y[0]),  // canvas Y is inverted
+      z: (b.z[0] + b.z[1]) / 2,
+    }
   }
 
   getDefaultParams(type: AttractorType): AttractorParams {

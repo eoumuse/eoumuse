@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import * as THREE from 'three'
 import { useSynthStore } from '../store/synthStore'
 import { SceneManager } from '../three/SceneManager'
 import { AttractorParticles } from '../three/AttractorParticles'
@@ -17,6 +18,8 @@ export function GeometryView3D() {
   const agentRef       = useRef<AgentSphere | null>(null)
   const engineRef      = useRef<AttractorEngine | null>(null)
   const lastTickRef    = useRef<number>(performance.now())
+  const perturbRef     = useRef<THREE.Mesh | null>(null)
+  const isPerturbingRef = useRef(false)
 
   const nodes            = useSynthStore((s) => s.nodes)
   const currentNodeIndex = useSynthStore((s) => s.currentNodeIndex)
@@ -48,6 +51,70 @@ export function GeometryView3D() {
     const agent = new AgentSphere()
     sm.scene.add(agent.group)
     agentRef.current = agent
+
+    // Perturbation cursor — glowing wireframe sphere at the drag target
+    const perturbGeo = new THREE.SphereGeometry(0.18, 10, 10)
+    const perturbMat = new THREE.MeshBasicMaterial({
+      color: 0xffd840,
+      wireframe: true,
+      transparent: true,
+      opacity: 0,
+    })
+    const perturbSphere = new THREE.Mesh(perturbGeo, perturbMat)
+    sm.scene.add(perturbSphere)
+    perturbRef.current = perturbSphere
+
+    // ── Right-click drag = attractor perturbation ────────────────────────
+    const getCanvasNorm = (e: PointerEvent) => {
+      const rect = canvas.getBoundingClientRect()
+      return {
+        cx: (e.clientX - rect.left) / rect.width,
+        cy: (e.clientY - rect.top)  / rect.height,
+      }
+    }
+
+    const applyPerturb = (cx: number, cy: number) => {
+      const eng = engineRef.current
+      if (!eng) return
+      const target = eng.canvasToAttractorCoords(cx, cy)
+      eng.perturbTarget   = target
+      eng.perturbStrength = 1
+
+      // Show sphere at world-space position
+      const s = eng.scaleForType()
+      perturbSphere.position.set(target.x * s, target.y * s, target.z * s)
+      ;(perturbSphere.material as THREE.MeshBasicMaterial).opacity = 0.7
+    }
+
+    const onPointerDown = (e: PointerEvent) => {
+      if (e.button !== 2) return  // only right-click
+      e.preventDefault()
+      isPerturbingRef.current = true
+      canvas.setPointerCapture(e.pointerId)
+      const { cx, cy } = getCanvasNorm(e)
+      applyPerturb(cx, cy)
+    }
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (!isPerturbingRef.current) return
+      const { cx, cy } = getCanvasNorm(e)
+      applyPerturb(cx, cy)
+    }
+
+    const onPointerUp = (e: PointerEvent) => {
+      if (e.button !== 2) return
+      isPerturbingRef.current = false
+      const eng = engineRef.current
+      if (eng) eng.perturbStrength = 0
+      ;(perturbSphere.material as THREE.MeshBasicMaterial).opacity = 0
+    }
+
+    const onContextMenu = (e: Event) => e.preventDefault()
+
+    canvas.addEventListener('pointerdown',  onPointerDown)
+    canvas.addEventListener('pointermove',  onPointerMove)
+    canvas.addEventListener('pointerup',    onPointerUp)
+    canvas.addEventListener('contextmenu',  onContextMenu)
 
     sm.startAnimation((time) => {
       const now = performance.now()
@@ -105,10 +172,15 @@ export function GeometryView3D() {
 
     return () => {
       window.removeEventListener('resize', handleResize)
+      canvas.removeEventListener('pointerdown',  onPointerDown)
+      canvas.removeEventListener('pointermove',  onPointerMove)
+      canvas.removeEventListener('pointerup',    onPointerUp)
+      canvas.removeEventListener('contextmenu',  onContextMenu)
       sm.dispose()
       bg.dispose()
       nodeMesh.dispose()
       agent.dispose()
+      perturbGeo.dispose()
     }
   }, [])
 
@@ -140,15 +212,21 @@ export function GeometryView3D() {
   }, [isPlaying, nodes])
 
   return (
-    <canvas
-      ref={canvasRef}
-      style={{
-        position: 'absolute',
-        inset: 0,
-        width: '100%',
-        height: '100%',
-        display: 'block',
-      }}
-    />
+    <div style={{ position: 'absolute', inset: 0 }}>
+      <canvas
+        ref={canvasRef}
+        style={{ width: '100%', height: '100%', display: 'block' }}
+      />
+      {/* Hint overlay */}
+      <div style={{
+        position: 'absolute', bottom: 10, right: 12,
+        fontSize: '9px', letterSpacing: '0.08em',
+        color: 'rgba(200,160,50,0.45)',
+        pointerEvents: 'none', userSelect: 'none',
+        textTransform: 'uppercase',
+      }}>
+        Left drag: orbit　·　Right drag: distort　·　Scroll: zoom
+      </div>
+    </div>
   )
 }

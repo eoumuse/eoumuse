@@ -35,10 +35,12 @@ export class AudioEngine {
   private intervalId: ReturnType<typeof setInterval> | null = null
   private _isStarted = false
 
-  // Recording
+  // Recording (WAV via ScriptProcessorNode)
   private mediaStreamDest!: MediaStreamAudioDestinationNode
-  private mediaRecorder: MediaRecorder | null = null
-  private recordedChunks: Blob[] = []
+  private scriptProcessor: ScriptProcessorNode | null = null
+  private recLeftChunks: Float32Array[] = []
+  private recRightChunks: Float32Array[] = []
+  private recMuteGain: GainNode | null = null
 
   private createImpulseResponse(duration = 2.5, decay = 2.0): AudioBuffer {
     const rate = this.ctx.sampleRate
@@ -115,32 +117,49 @@ export class AudioEngine {
   }
 
   startRecording(): void {
-    if (!this.mediaStreamDest) return
-    this.recordedChunks = []
-    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-      ? 'audio/webm;codecs=opus' : 'audio/webm'
-    this.mediaRecorder = new MediaRecorder(this.mediaStreamDest.stream, { mimeType })
-    this.mediaRecorder.ondataavailable = (e) => {
-      if (e.data.size > 0) this.recordedChunks.push(e.data)
+    if (!this.ctx) return
+    this.recLeftChunks  = []
+    this.recRightChunks = []
+
+    // Tap the master output with a ScriptProcessorNode to capture raw PCM
+    this.scriptProcessor = this.ctx.createScriptProcessor(4096, 2, 2)
+    this.scriptProcessor.onaudioprocess = (e) => {
+      this.recLeftChunks.push(new Float32Array(e.inputBuffer.getChannelData(0)))
+      this.recRightChunks.push(new Float32Array(e.inputBuffer.getChannelData(1)))
     }
-    this.mediaRecorder.start(100) // collect chunks every 100ms
+    this.masterGainNode.connect(this.scriptProcessor)
+
+    // Route to a muted gain so ScriptProcessor stays active (must be in graph)
+    this.recMuteGain = this.ctx.createGain()
+    this.recMuteGain.gain.value = 0
+    this.scriptProcessor.connect(this.recMuteGain)
+    this.recMuteGain.connect(this.ctx.destination)
   }
 
   stopRecording(): void {
-    if (!this.mediaRecorder) return
-    this.mediaRecorder.onstop = () => {
-      const blob = new Blob(this.recordedChunks, { type: 'audio/webm' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `grainweaver-${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.webm`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-    }
-    this.mediaRecorder.stop()
-    this.mediaRecorder = null
+    if (!this.scriptProcessor) return
+    this.scriptProcessor.disconnect()
+    this.recMuteGain?.disconnect()
+    this.scriptProcessor = null
+    this.recMuteGain = null
+
+    const sampleRate = this.ctx.sampleRate
+    const left  = mergeFloat32(this.recLeftChunks)
+    const right = mergeFloat32(this.recRightChunks)
+    const wav   = encodeWAV(left, right, sampleRate)
+
+    const blob = new Blob([wav], { type: 'audio/wav' })
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href     = url
+    a.download = `grainweaver-${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.wav`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+
+    this.recLeftChunks  = []
+    this.recRightChunks = []
   }
 
   setFilterCutoff(v: number): void {
@@ -280,3 +299,45 @@ export class AudioEngine {
 }
 
 export const audioEngine = new AudioEngine()
+
+// ── WAV helpers ───────────────────────────────────────────────────────────────
+
+function mergeFloat32(chunks: Float32Array[]): Float32Array {
+  const total = chunks.reduce((n, c) => n + c.length, 0)
+  const out = new Float32Array(total)
+  let offset = 0
+  for (const chunk of chunks) { out.set(chunk, offset); offset += chunk.length }
+  return out
+}
+
+function encodeWAV(left: Float32Array, right: Float32Array, sampleRate: number): ArrayBuffer {
+  const numSamples  = left.length
+  const numChannels = 2
+  const bps         = 16
+  const byteRate    = sampleRate * numChannels * bps / 8
+  const blockAlign  = numChannels * bps / 8
+  const dataSize    = numSamples * numChannels * 2
+  const buf         = new ArrayBuffer(44 + dataSize)
+  const v           = new DataView(buf)
+
+  const str = (off: number, s: string) => {
+    for (let i = 0; i < s.length; i++) v.setUint8(off + i, s.charCodeAt(i))
+  }
+  str(0, 'RIFF');  v.setUint32(4, 36 + dataSize, true)
+  str(8, 'WAVE');  str(12, 'fmt ')
+  v.setUint32(16, 16, true)          // PCM chunk size
+  v.setUint16(20, 1, true)           // PCM format
+  v.setUint16(22, numChannels, true)
+  v.setUint32(24, sampleRate, true)
+  v.setUint32(28, byteRate, true)
+  v.setUint16(32, blockAlign, true)
+  v.setUint16(34, bps, true)
+  str(36, 'data');  v.setUint32(40, dataSize, true)
+
+  let off = 44
+  for (let i = 0; i < numSamples; i++) {
+    v.setInt16(off,     Math.max(-1, Math.min(1, left[i]))  * 0x7fff, true); off += 2
+    v.setInt16(off,     Math.max(-1, Math.min(1, right[i])) * 0x7fff, true); off += 2
+  }
+  return buf
+}
