@@ -8,8 +8,8 @@ export class SceneManager {
 
   constructor(canvas: HTMLCanvasElement) {
     this.scene = new THREE.Scene()
-    this.scene.background = new THREE.Color(0x08000f)
-    this.scene.fog = new THREE.FogExp2(0x08000f, 0.08)
+    this.scene.background = new THREE.Color(0x28282f)
+    this.scene.fog = new THREE.FogExp2(0x28282f, 0.06)
 
     this.camera = new THREE.PerspectiveCamera(
       60,
@@ -31,13 +31,16 @@ export class SceneManager {
     this.renderer.toneMappingExposure = 1.2
 
     // Ambient light
-    const ambient = new THREE.AmbientLight(0x110022, 2)
+    const ambient = new THREE.AmbientLight(0x505060, 2.5)
     this.scene.add(ambient)
 
-    // Directional
-    const dir = new THREE.DirectionalLight(0xbf5fff, 1)
+    const dir = new THREE.DirectionalLight(0xff2d9b, 0.8)
     dir.position.set(5, 5, 5)
     this.scene.add(dir)
+
+    const dir2 = new THREE.DirectionalLight(0xffe629, 0.4)
+    dir2.position.set(-5, -3, 2)
+    this.scene.add(dir2)
   }
 
   startAnimation(onFrame: (time: number) => void) {

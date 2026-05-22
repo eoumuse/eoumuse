@@ -14,7 +14,7 @@ function App() {
       width: '100vw',
       height: '100vh',
       overflow: 'hidden',
-      background: '#08000F',
+      background: '#28282F',
     }}>
       {/* Full screen 3D background */}
       <GeometryView3D />

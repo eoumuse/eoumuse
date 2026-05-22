@@ -35,6 +35,11 @@ export class AudioEngine {
   private intervalId: ReturnType<typeof setInterval> | null = null
   private _isStarted = false
 
+  // Recording
+  private mediaStreamDest!: MediaStreamAudioDestinationNode
+  private mediaRecorder: MediaRecorder | null = null
+  private recordedChunks: Blob[] = []
+
   private createImpulseResponse(duration = 2.5, decay = 2.0): AudioBuffer {
     const rate = this.ctx.sampleRate
     const length = Math.floor(rate * duration)
@@ -100,9 +105,42 @@ export class AudioEngine {
       this.reverbNode.connect(this.reverbWetNode)
       this.reverbWetNode.connect(this.masterGainNode)
 
+      // MediaStream destination for recording
+      this.mediaStreamDest = this.ctx.createMediaStreamDestination()
+      this.masterGainNode.connect(this.mediaStreamDest)
+
       // Wire harmonizer to this context
       harmonizerEngine.init(this.ctx, this.masterGainNode)
     }
+  }
+
+  startRecording(): void {
+    if (!this.mediaStreamDest) return
+    this.recordedChunks = []
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus' : 'audio/webm'
+    this.mediaRecorder = new MediaRecorder(this.mediaStreamDest.stream, { mimeType })
+    this.mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) this.recordedChunks.push(e.data)
+    }
+    this.mediaRecorder.start(100) // collect chunks every 100ms
+  }
+
+  stopRecording(): void {
+    if (!this.mediaRecorder) return
+    this.mediaRecorder.onstop = () => {
+      const blob = new Blob(this.recordedChunks, { type: 'audio/webm' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `grainweaver-${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.webm`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    }
+    this.mediaRecorder.stop()
+    this.mediaRecorder = null
   }
 
   setFilterCutoff(v: number): void {

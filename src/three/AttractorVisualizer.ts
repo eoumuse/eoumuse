@@ -70,22 +70,19 @@ export class AttractorVisualizer {
       pos[i * 3 + 1] = trail[src + 1] * scale
       pos[i * 3 + 2] = trail[src + 2] * scale
 
-      // Color: pink → purple → cyan along path age
-      if (age < 0.33) {
-        const t = age / 0.33
-        col[i * 3]     = 1   - t * 0.25    // R: 1→0.75
-        col[i * 3 + 1] = t * 0.18          // G: 0→0.18
-        col[i * 3 + 2] = t * 0.6           // B: 0→0.6
-      } else if (age < 0.66) {
-        const t = (age - 0.33) / 0.33
-        col[i * 3]     = 0.75 - t * 0.62   // R: 0.75→0.13
-        col[i * 3 + 1] = 0.18 + t * 0.72   // G: 0.18→0.9
-        col[i * 3 + 2] = 0.6  + t * 0.4    // B: 0.6→1
+      // Color: pink → yellow → light gray along path age
+      if (age < 0.5) {
+        const t = age / 0.5
+        // pink(1,0.18,0.61) → yellow(1,0.9,0.16)
+        col[i * 3]     = 1.0
+        col[i * 3 + 1] = 0.18 + t * 0.72
+        col[i * 3 + 2] = 0.61 - t * 0.45
       } else {
-        const t = (age - 0.66) / 0.34
-        col[i * 3]     = 0.13 * (1 - t)
-        col[i * 3 + 1] = 0.9
-        col[i * 3 + 2] = 1
+        const t = (age - 0.5) / 0.5
+        // yellow(1,0.9,0.16) → light gray(0.75,0.75,0.8)
+        col[i * 3]     = 1.0  - t * 0.25
+        col[i * 3 + 1] = 0.9  - t * 0.15
+        col[i * 3 + 2] = 0.16 + t * 0.64
       }
       // fade out oldest 20%
       const fade = Math.min(1, age * 5)
