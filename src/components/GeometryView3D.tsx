@@ -169,17 +169,17 @@ export function GeometryView3D() {
         if (hit) {
           const s = eng.scaleForType()
           eng.perturbTarget   = { x: hit.x / s, y: hit.y / s, z: hit.z / s }
-          eng.perturbStrength = isGrab ? 1.2 : 0.13
+          eng.perturbStrength = isGrab ? 1.2 : 0
 
           perturbSph.position.copy(hit)
-          ;(perturbSph.material as THREE.MeshBasicMaterial).opacity = isGrab ? 0.85 : 0.28
+          ;(perturbSph.material as THREE.MeshBasicMaterial).opacity = isGrab ? 0.85 : 0
 
           // Update connection line: head → target
           const cp = connPosRef.current!
           cp.setXYZ(0, eng.state.x * s, eng.state.y * s, eng.state.z * s)
           cp.setXYZ(1, hit.x, hit.y, hit.z)
           cp.needsUpdate = true
-          ;(connLine.material as THREE.LineBasicMaterial).opacity = isGrab ? 0.55 : 0.18
+          ;(connLine.material as THREE.LineBasicMaterial).opacity = isGrab ? 0.55 : 0
         } else {
           eng.perturbStrength = 0
           ;(perturbSph.material as THREE.MeshBasicMaterial).opacity = 0
@@ -262,8 +262,7 @@ export function GeometryView3D() {
         pointerEvents: 'none', userSelect: 'none',
         textTransform: 'uppercase', lineHeight: '1.8', textAlign: 'right',
       }}>
-        Hover: drift　·　Drag: pull　·　Right drag: orbit<br />
-        Double-click: chaos kick　·　Scroll: zoom
+        Drag: pull　·　Right drag: orbit　·　Double-click: chaos kick　·　Scroll: zoom
       </div>
     </div>
   )
