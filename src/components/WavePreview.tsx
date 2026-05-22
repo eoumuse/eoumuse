@@ -20,7 +20,7 @@ export function WavePreview() {
     const buffer = audioEngine.buffer
     if (!buffer) {
       // Draw placeholder text
-      ctx.fillStyle = 'rgba(191, 95, 255, 0.35)'
+      ctx.fillStyle = 'rgba(136, 136, 153, 0.35)'
       ctx.font = '700 10px "Courier New", monospace'
       ctx.letterSpacing = '0.15em'
       ctx.textAlign = 'center'
@@ -36,7 +36,7 @@ export function WavePreview() {
 
     // Draw waveform
     ctx.beginPath()
-    ctx.strokeStyle = '#BF5FFF'
+    ctx.strokeStyle = '#888899'
     ctx.lineWidth = 1
 
     for (let i = 0; i < width; i++) {
@@ -131,7 +131,7 @@ export function WavePreview() {
           <div style={{
             marginTop: '4px',
             fontSize: '8px',
-            color: 'rgba(191, 95, 255, 0.45)',
+            color: 'rgba(136, 136, 153, 0.45)',
             textAlign: 'center',
             letterSpacing: '0.08em',
           }}>

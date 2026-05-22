@@ -74,7 +74,7 @@ export function AgentPanel() {
             min={10}
             max={2000}
             label="GRAIN"
-            color="#BF5FFF"
+            color="#888899"
             onChange={handleGrainSize}
             defaultValue={150}
             formatValue={(v) => v.toFixed(0) + 'ms'}
@@ -84,7 +84,7 @@ export function AgentPanel() {
             min={1}
             max={100}
             label="DENS"
-            color="#00E5FF"
+            color="#FFE629"
             onChange={handleDensity}
             defaultValue={8}
             formatValue={(v) => v.toFixed(1)}
@@ -114,7 +114,7 @@ export function AgentPanel() {
             min={0}
             max={1}
             label="PAN"
-            color="#BF5FFF"
+            color="#888899"
             onChange={handlePanSpread}
             defaultValue={0.4}
             formatValue={(v) => (v * 100).toFixed(0) + '%'}

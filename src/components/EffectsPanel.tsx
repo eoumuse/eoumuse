@@ -63,7 +63,7 @@ export function EffectsPanel() {
 
   return (
     <div className="panel">
-      <div className="panel-header" style={{ borderColor: 'rgba(0, 229, 255, 0.4)' }}>
+      <div className="panel-header" style={{ borderColor: 'rgba(255, 230, 41, 0.4)' }}>
         <span className="sparkle">⊛</span> FX CHAIN{' '}
         <span style={{ fontSize: '9px', opacity: 0.5 }}>// filter · delay · reverb</span>
       </div>
@@ -72,15 +72,15 @@ export function EffectsPanel() {
 
         {/* Filter section */}
         <div style={{
-          background: 'rgba(0, 229, 255, 0.04)',
-          border: '1px solid rgba(0, 229, 255, 0.15)',
+          background: 'rgba(255, 230, 41, 0.04)',
+          border: '1px solid rgba(255, 230, 41, 0.15)',
           borderRadius: '10px',
           padding: '8px',
         }}>
           <div style={{
             fontSize: '8px',
             fontWeight: 700,
-            color: '#00E5FF',
+            color: '#FFE629',
             letterSpacing: '0.14em',
             marginBottom: '8px',
             opacity: 0.8,
@@ -98,15 +98,15 @@ export function EffectsPanel() {
                   flex: 1,
                   padding: '4px 6px',
                   borderRadius: '7px',
-                  border: `1px solid ${filterType === value ? '#00E5FF' : 'rgba(255,255,255,0.1)'}`,
-                  background: filterType === value ? 'rgba(0, 229, 255, 0.18)' : 'rgba(255,255,255,0.03)',
-                  color: filterType === value ? '#00E5FF' : 'rgba(255,255,255,0.35)',
+                  border: `1px solid ${filterType === value ? '#FFE629' : 'rgba(255,255,255,0.1)'}`,
+                  background: filterType === value ? 'rgba(255, 230, 41, 0.18)' : 'rgba(255,255,255,0.03)',
+                  color: filterType === value ? '#FFE629' : 'rgba(255,255,255,0.35)',
                   fontSize: '9px',
                   fontWeight: 700,
                   letterSpacing: '0.06em',
                   cursor: 'pointer',
                   transition: 'all 0.15s',
-                  boxShadow: filterType === value ? '0 0 10px rgba(0,229,255,0.3)' : 'none',
+                  boxShadow: filterType === value ? '0 0 10px rgba(255,230,41,0.3)' : 'none',
                 }}
               >
                 {label}
@@ -121,7 +121,7 @@ export function EffectsPanel() {
               min={80}
               max={18000}
               label="CUTOFF"
-              color="#00E5FF"
+              color="#FFE629"
               onChange={handleFilterCutoff}
               defaultValue={8000}
               formatValue={(v) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${v.toFixed(0)}`}
@@ -131,7 +131,7 @@ export function EffectsPanel() {
               min={0.1}
               max={20}
               label="RESO"
-              color="#00E5FF"
+              color="#FFE629"
               onChange={handleFilterResonance}
               defaultValue={1}
               formatValue={(v) => v.toFixed(1)}
@@ -141,15 +141,15 @@ export function EffectsPanel() {
 
         {/* Delay section */}
         <div style={{
-          background: 'rgba(191, 95, 255, 0.04)',
-          border: '1px solid rgba(191, 95, 255, 0.15)',
+          background: 'rgba(136, 136, 153, 0.04)',
+          border: '1px solid rgba(136, 136, 153, 0.15)',
           borderRadius: '10px',
           padding: '8px',
         }}>
           <div style={{
             fontSize: '8px',
             fontWeight: 700,
-            color: '#BF5FFF',
+            color: '#888899',
             letterSpacing: '0.14em',
             marginBottom: '8px',
             opacity: 0.8,
@@ -163,7 +163,7 @@ export function EffectsPanel() {
               min={0}
               max={2}
               label="TIME"
-              color="#BF5FFF"
+              color="#888899"
               onChange={handleDelayTime}
               defaultValue={0.25}
               formatValue={(v) => `${v.toFixed(2)}s`}
@@ -173,7 +173,7 @@ export function EffectsPanel() {
               min={0}
               max={0.95}
               label="FDBK"
-              color="#BF5FFF"
+              color="#888899"
               onChange={handleDelayFeedback}
               defaultValue={0.3}
               formatValue={(v) => `${Math.round(v * 100)}%`}
@@ -183,7 +183,7 @@ export function EffectsPanel() {
               min={0}
               max={1}
               label="WET"
-              color="#BF5FFF"
+              color="#888899"
               onChange={handleDelayWet}
               defaultValue={0}
               formatValue={(v) => `${Math.round(v * 100)}%`}

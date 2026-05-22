@@ -34,7 +34,7 @@ export function DropZone() {
 
     // Draw waveform
     ctx.beginPath()
-    ctx.strokeStyle = '#BF5FFF'
+    ctx.strokeStyle = '#888899'
     ctx.lineWidth = 1
 
     for (let i = 0; i < width; i++) {
@@ -145,7 +145,7 @@ export function DropZone() {
           style={{
             border: isDragging
               ? '2px dashed #FF2D9B'
-              : '2px dashed rgba(191, 95, 255, 0.4)',
+              : '2px dashed rgba(136, 136, 153, 0.4)',
             borderRadius: '12px',
             padding: '16px 12px',
             textAlign: 'center',
@@ -156,13 +156,13 @@ export function DropZone() {
           }}
         >
           {isLoading ? (
-            <div style={{ color: '#BF5FFF', fontSize: '12px' }}>
+            <div style={{ color: '#888899', fontSize: '12px' }}>
               <div className="sparkle" style={{ fontSize: '20px', marginBottom: '4px' }}>★</div>
               ANALYZING...
             </div>
           ) : audioLoaded ? (
             <div style={{ color: '#FFE629', fontSize: '11px' }}>
-              <div style={{ color: '#00E5FF', marginBottom: '4px', fontSize: '10px' }}>✦ LOADED ✦</div>
+              <div style={{ color: '#FFE629', marginBottom: '4px', fontSize: '10px' }}>✦ LOADED ✦</div>
               <div style={{
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -174,10 +174,10 @@ export function DropZone() {
               </div>
             </div>
           ) : (
-            <div style={{ color: 'rgba(191, 95, 255, 0.7)', fontSize: '11px' }}>
+            <div style={{ color: 'rgba(136, 136, 153, 0.7)', fontSize: '11px' }}>
               <div className="float" style={{ fontSize: '18px', marginBottom: '6px', color: '#FF2D9B' }}>✦</div>
               <div style={{ fontWeight: '700', letterSpacing: '0.1em', color: '#FFF0FF' }}>DROP SAMPLE</div>
-              <div style={{ fontSize: '10px', marginTop: '2px', color: 'rgba(191, 95, 255, 0.5)' }}>or click to browse</div>
+              <div style={{ fontSize: '10px', marginTop: '2px', color: 'rgba(136, 136, 153, 0.5)' }}>or click to browse</div>
             </div>
           )}
         </div>

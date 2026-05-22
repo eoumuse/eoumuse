@@ -12,8 +12,8 @@ const ATTRACTOR_TYPES: { type: AttractorType; label: string; emoji: string; desc
 
 const TYPE_COLORS: Record<AttractorType, string> = {
   lorenz:  '#FF2D9B',
-  rossler: '#BF5FFF',
-  thomas:  '#00E5FF',
+  rossler: '#888899',
+  thomas:  '#FFE629',
 }
 
 export function AttractorPanel() {
@@ -123,7 +123,7 @@ export function AttractorPanel() {
           {/* X → buffer position */}
           {[
             { label: 'X → POS',   val: nx, norm: nx,                              color: '#FF2D9B' },
-            { label: 'Z → GRAIN', val: nz, norm: nz,                              color: '#00E5FF' },
+            { label: 'Z → GRAIN', val: nz, norm: nz,                              color: '#FFE629' },
           ].map(({ label, val, norm, color }) => (
             <div key={label} style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '8px', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em', marginBottom: '2px' }}>

@@ -153,8 +153,8 @@ export function HarmonizerPanel() {
         {/* Detected key badge */}
         {detectedKey ? (
           <div style={{
-            background: 'rgba(0, 229, 255, 0.06)',
-            border: '1px solid rgba(0, 229, 255, 0.2)',
+            background: 'rgba(255, 230, 41, 0.06)',
+            border: '1px solid rgba(255, 230, 41, 0.2)',
             borderRadius: '10px',
             padding: '8px 10px',
           }}>
@@ -167,15 +167,15 @@ export function HarmonizerPanel() {
               <div style={{
                 fontSize: '11px',
                 fontWeight: 800,
-                color: '#00E5FF',
+                color: '#FFE629',
                 letterSpacing: '0.1em',
-                textShadow: '0 0 10px #00E5FF',
+                textShadow: '0 0 10px #FFE629',
               }}>
                 {detectedKey}
               </div>
               <div style={{
                 fontSize: '9px',
-                color: 'rgba(0, 229, 255, 0.7)',
+                color: 'rgba(255, 230, 41, 0.7)',
                 fontVariantNumeric: 'tabular-nums',
               }}>
                 {confPct}%
@@ -191,8 +191,8 @@ export function HarmonizerPanel() {
               <div style={{
                 height: '100%',
                 width: `${confPct}%`,
-                background: 'linear-gradient(90deg, #00E5FF, #BF5FFF)',
-                boxShadow: '0 0 6px #00E5FF',
+                background: 'linear-gradient(90deg, #FFE629, #888899)',
+                boxShadow: '0 0 6px #FFE629',
                 transition: 'width 0.5s ease',
               }} />
             </div>

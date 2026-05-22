@@ -48,22 +48,22 @@ function App() {
               fontWeight: '900',
               letterSpacing: '0.2em',
               textTransform: 'uppercase',
-              background: 'linear-gradient(90deg, #FF2D9B, #BF5FFF, #00E5FF)',
+              background: 'linear-gradient(90deg, #FF2D9B, #888899, #FFE629)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
-              filter: 'drop-shadow(0 0 12px #BF5FFF)',
+              filter: 'drop-shadow(0 0 12px #888899)',
             }}>
               GrainWeaver
             </h1>
-            <span className="sparkle" style={{ color: '#00E5FF', fontSize: '16px', animationDelay: '0.7s' }}>✧</span>
+            <span className="sparkle" style={{ color: '#FFE629', fontSize: '16px', animationDelay: '0.7s' }}>✧</span>
           </div>
 
           <div style={{
             fontSize: '9px',
             fontWeight: '700',
             letterSpacing: '0.15em',
-            color: 'rgba(191, 95, 255, 0.5)',
+            color: 'rgba(136, 136, 153, 0.5)',
             textTransform: 'uppercase',
           }}>
             Granular Synthesizer
@@ -132,7 +132,7 @@ function InfoPanel() {
       <div className="panel-header">
         <span className="sparkle">✦</span> INFO <span className="sparkle" style={{ animationDelay: '1.2s' }}>★</span>
       </div>
-      <div style={{ padding: '12px', fontSize: '10px', color: 'rgba(191, 95, 255, 0.7)', lineHeight: '1.6' }}>
+      <div style={{ padding: '12px', fontSize: '10px', color: 'rgba(136, 136, 153, 0.7)', lineHeight: '1.6' }}>
         <div style={{ marginBottom: '8px', color: '#FFE629', fontWeight: '700', letterSpacing: '0.1em' }}>
           LORENZ ATTRACTOR
         </div>
@@ -142,10 +142,10 @@ function InfoPanel() {
         <div style={{ marginTop: '8px', color: '#FF2D9B', fontWeight: '600' }}>
           dx/dt = σ(y−x)
         </div>
-        <div style={{ color: '#BF5FFF', fontWeight: '600' }}>
+        <div style={{ color: '#888899', fontWeight: '600' }}>
           dy/dt = x(ρ−z)−y
         </div>
-        <div style={{ color: '#00E5FF', fontWeight: '600' }}>
+        <div style={{ color: '#FFE629', fontWeight: '600' }}>
           dz/dt = xy − βz
         </div>
         <div style={{
@@ -177,7 +177,7 @@ function InfoPanel() {
             gap: '6px',
             marginBottom: '4px',
           }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#BF5FFF', boxShadow: '0 0 6px #BF5FFF' }} />
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#888899', boxShadow: '0 0 6px #888899' }} />
             <span style={{ color: 'rgba(255,240,255,0.6)', fontSize: '9px' }}>Purple — attractor arms</span>
           </div>
           <div style={{
@@ -185,7 +185,7 @@ function InfoPanel() {
             alignItems: 'center',
             gap: '6px',
           }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#00E5FF', boxShadow: '0 0 6px #00E5FF' }} />
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#FFE629', boxShadow: '0 0 6px #FFE629' }} />
             <span style={{ color: 'rgba(255,240,255,0.6)', fontSize: '9px' }}>Cyan — crossing paths</span>
           </div>
         </div>
