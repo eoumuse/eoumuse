@@ -47,6 +47,43 @@ interface SynthState {
   setSemitonesPerOrbit: (v: number) => void
   setPitchWrap: (v: boolean) => void
 
+  // Effects
+  filterCutoff: number
+  filterResonance: number
+  filterType: string
+  delayTime: number
+  delayFeedback: number
+  delayWet: number
+  reverbWet: number
+
+  // Harmonizer
+  harmonizerEnabled: boolean
+  harmonizerChordMode: string
+  harmonizerVoiceGain: number
+  harmonizerDetune: number
+
+  // Key detection
+  detectedKey: string
+  detectedKeyConfidence: number
+
+  // Effects setters
+  setFilterCutoff: (v: number) => void
+  setFilterResonance: (v: number) => void
+  setFilterType: (v: string) => void
+  setDelayTime: (v: number) => void
+  setDelayFeedback: (v: number) => void
+  setDelayWet: (v: number) => void
+  setReverbWet: (v: number) => void
+
+  // Harmonizer setters
+  setHarmonizerEnabled: (v: boolean) => void
+  setHarmonizerChordMode: (v: string) => void
+  setHarmonizerVoiceGain: (v: number) => void
+  setHarmonizerDetune: (v: number) => void
+
+  // Key detection setters
+  setDetectedKey: (key: string, confidence: number) => void
+
   // Actions
   setGrainSize: (v: number) => void
   setDensity: (v: number) => void
@@ -97,6 +134,37 @@ export const useSynthStore = create<SynthState>((set) => ({
   semitonesPerOrbit: 7,
   pitchWrap: true,
   attractorVortexPitch: 0,
+
+  filterCutoff: 8000,
+  filterResonance: 1,
+  filterType: 'lowpass',
+  delayTime: 0.25,
+  delayFeedback: 0.3,
+  delayWet: 0,
+  reverbWet: 0,
+
+  harmonizerEnabled: false,
+  harmonizerChordMode: 'Triad',
+  harmonizerVoiceGain: 0.35,
+  harmonizerDetune: 8,
+
+  detectedKey: '',
+  detectedKeyConfidence: 0,
+
+  setFilterCutoff:    (v) => set({ filterCutoff: v }),
+  setFilterResonance: (v) => set({ filterResonance: v }),
+  setFilterType:      (v) => set({ filterType: v }),
+  setDelayTime:       (v) => set({ delayTime: v }),
+  setDelayFeedback:   (v) => set({ delayFeedback: v }),
+  setDelayWet:        (v) => set({ delayWet: v }),
+  setReverbWet:       (v) => set({ reverbWet: v }),
+
+  setHarmonizerEnabled:   (v) => set({ harmonizerEnabled: v }),
+  setHarmonizerChordMode: (v) => set({ harmonizerChordMode: v }),
+  setHarmonizerVoiceGain: (v) => set({ harmonizerVoiceGain: v }),
+  setHarmonizerDetune:    (v) => set({ harmonizerDetune: v }),
+
+  setDetectedKey: (key, confidence) => set({ detectedKey: key, detectedKeyConfidence: confidence }),
 
   setGrainSize:      (v) => set({ grainSize: v }),
   setDensity:        (v) => set({ density: v }),

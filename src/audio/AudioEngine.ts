@@ -11,9 +11,40 @@ export class AudioEngine {
   panSpread = 0.4 // 0-1
   masterGain = 0.7
 
+  // Effects nodes (created in ensureContext)
+  private filterNode!: BiquadFilterNode
+  private delayNode!: DelayNode
+  private delayFeedbackNode!: GainNode
+  private delayWetNode!: GainNode
+  private reverbNode!: ConvolverNode
+  private reverbWetNode!: GainNode
+  private fxInputGain!: GainNode
+
+  // Effect params
+  filterType: BiquadFilterType = 'lowpass'
+  filterCutoff: number = 8000
+  filterResonance: number = 1
+  delayTime: number = 0.25
+  delayFeedback: number = 0.3
+  delayWet: number = 0
+  reverbWet: number = 0
+
   private nextGrainTime = 0
   private intervalId: ReturnType<typeof setInterval> | null = null
   private _isStarted = false
+
+  private createImpulseResponse(duration = 2.5, decay = 2.0): AudioBuffer {
+    const rate = this.ctx.sampleRate
+    const length = Math.floor(rate * duration)
+    const ir = this.ctx.createBuffer(2, length, rate)
+    for (let ch = 0; ch < 2; ch++) {
+      const data = ir.getChannelData(ch)
+      for (let i = 0; i < length; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay)
+      }
+    }
+    return ir
+  }
 
   private ensureContext() {
     if (!this.ctx) {
@@ -21,6 +52,100 @@ export class AudioEngine {
       this.masterGainNode = this.ctx.createGain()
       this.masterGainNode.gain.value = this.masterGain
       this.masterGainNode.connect(this.ctx.destination)
+
+      // fx input gain
+      this.fxInputGain = this.ctx.createGain()
+      this.fxInputGain.gain.value = 1
+
+      // Filter
+      this.filterNode = this.ctx.createBiquadFilter()
+      this.filterNode.type = this.filterType
+      this.filterNode.frequency.value = this.filterCutoff
+      this.filterNode.Q.value = this.filterResonance
+
+      // Delay
+      this.delayNode = this.ctx.createDelay(2.0)
+      this.delayNode.delayTime.value = this.delayTime
+      this.delayFeedbackNode = this.ctx.createGain()
+      this.delayFeedbackNode.gain.value = this.delayFeedback
+      this.delayWetNode = this.ctx.createGain()
+      this.delayWetNode.gain.value = this.delayWet
+
+      // Reverb
+      this.reverbNode = this.ctx.createConvolver()
+      this.reverbNode.buffer = this.createImpulseResponse()
+      this.reverbWetNode = this.ctx.createGain()
+      this.reverbWetNode.gain.value = this.reverbWet
+
+      // Routing:
+      // fxInputGain → masterGainNode (dry pass-through)
+      this.fxInputGain.connect(this.masterGainNode)
+
+      // fxInputGain → filterNode → masterGainNode (filtered dry)
+      this.fxInputGain.connect(this.filterNode)
+      this.filterNode.connect(this.masterGainNode)
+
+      // filterNode → delayNode → delayWetNode → masterGainNode
+      // delayNode → delayFeedbackNode → delayNode (feedback loop)
+      this.filterNode.connect(this.delayNode)
+      this.delayNode.connect(this.delayFeedbackNode)
+      this.delayFeedbackNode.connect(this.delayNode)
+      this.delayNode.connect(this.delayWetNode)
+      this.delayWetNode.connect(this.masterGainNode)
+
+      // filterNode → reverbNode → reverbWetNode → masterGainNode
+      this.filterNode.connect(this.reverbNode)
+      this.reverbNode.connect(this.reverbWetNode)
+      this.reverbWetNode.connect(this.masterGainNode)
+    }
+  }
+
+  setFilterCutoff(v: number): void {
+    this.filterCutoff = v
+    if (this.filterNode) {
+      this.filterNode.frequency.setTargetAtTime(v, this.ctx.currentTime, 0.01)
+    }
+  }
+
+  setFilterResonance(v: number): void {
+    this.filterResonance = v
+    if (this.filterNode) {
+      this.filterNode.Q.setTargetAtTime(v, this.ctx.currentTime, 0.01)
+    }
+  }
+
+  setFilterType(t: BiquadFilterType): void {
+    this.filterType = t
+    if (this.filterNode) {
+      this.filterNode.type = t
+    }
+  }
+
+  setDelayTime(v: number): void {
+    this.delayTime = v
+    if (this.delayNode) {
+      this.delayNode.delayTime.setTargetAtTime(v, this.ctx.currentTime, 0.01)
+    }
+  }
+
+  setDelayFeedback(v: number): void {
+    this.delayFeedback = v
+    if (this.delayFeedbackNode) {
+      this.delayFeedbackNode.gain.setTargetAtTime(v, this.ctx.currentTime, 0.01)
+    }
+  }
+
+  setDelayWet(v: number): void {
+    this.delayWet = v
+    if (this.delayWetNode) {
+      this.delayWetNode.gain.setTargetAtTime(v, this.ctx.currentTime, 0.01)
+    }
+  }
+
+  setReverbWet(v: number): void {
+    this.reverbWet = v
+    if (this.reverbWetNode) {
+      this.reverbWetNode.gain.setTargetAtTime(v, this.ctx.currentTime, 0.01)
     }
   }
 
@@ -93,7 +218,7 @@ export class AudioEngine {
 
       src.connect(env)
       env.connect(panner)
-      panner.connect(this.masterGainNode)
+      panner.connect(this.fxInputGain)
 
       const interval = 1 / Math.max(this.density, 0.5)
       const jitter = (Math.random() - 0.5) * 0.01
