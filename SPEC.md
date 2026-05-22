@@ -56,7 +56,95 @@ Pan Spread — ステレオ広がり（0〜1）
 - Rate: 0.01〜20 Hz  
 - Amount: 0〜100%
 
-### 2.6 エフェクト（ポストプロセッシング）
+### 2.6 キー検出 & ハーモナイザー
+
+#### キー検出
+
+| 項目 | 詳細 |
+|------|------|
+| アルゴリズム | Krumhansl-Schmuckler（クロマベクトル相関法） |
+| 入力 | AudioBuffer 全体を FFT 解析 → 12次元クロマベクトル生成 |
+| 出力 | 検出キー（例: `C Major` / `A minor`）＋ 信頼度スコア（0〜1） |
+| 手動オーバーライド | 検出結果が違う場合に手動でキー・スケールを選択可能 |
+| 再検出 | ファイル読み込み時に自動実行、ボタンで任意に再実行 |
+
+**対応スケール（ハーモナイズの基準）**
+
+```
+Major / Natural Minor / Harmonic Minor / Melodic Minor
+Dorian / Phrygian / Lydian / Mixolydian / Locrian
+Major Pentatonic / Minor Pentatonic
+Chromatic（スケール外音も許可）
+```
+
+#### ハーモナイザー
+
+グレインエンジンに追加ボイスを生やし、検出キー上の音程で同時発音させる。  
+各ボイスは独立した GrainScheduler を持ち、ピッチオフセットのみ異なる。
+
+| パラメータ | 範囲 | 説明 |
+|-----------|------|------|
+| Voices | 1〜6 | ハーモニーの声部数（1 = 原音のみ） |
+| Intervals | スケール音度 | 追加する音度を個別に選択（3rd / 5th / 7th / 9th など） |
+| Spread | 0〜2 オクターブ | ボイスを何オクターブ分散させるか |
+| Detune | 0〜50 cent | 各ボイスにわずかなデチューンを加えてコーラス感を出す |
+| Voice Mix | 0〜1 per voice | 各ボイスの音量バランス |
+| Lock to Scale | ON/OFF | Pitch ノブをスケール音度にスナップさせる |
+
+**コードモード（プリセット的なインターバル組み合わせ）**
+
+| モード | インターバル |
+|--------|------------|
+| Unison | 原音のみ |
+| 3rd | +3度 |
+| 5th | +5度 |
+| Octave | +8度 |
+| Triad | +3度 + +5度 |
+| 7th Chord | +3度 + +5度 + +7度 |
+| Power | +5度 + +8度 |
+| Custom | 任意選択 |
+
+#### キー検出アルゴリズム（疑似コード）
+
+```typescript
+// Krumhansl-Schmuckler プロファイル
+const MAJOR_PROFILE = [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88];
+const MINOR_PROFILE = [6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17];
+
+const detectKey = (audioBuffer: AudioBuffer): KeyResult => {
+  const chroma = extractChroma(audioBuffer); // FFT → 12次元クロマベクトル
+  
+  let best = { key: 0, mode: 'major', score: -Infinity };
+  for (let root = 0; root < 12; root++) {
+    const majorScore = pearsonCorrelation(chroma, rotate(MAJOR_PROFILE, root));
+    const minorScore = pearsonCorrelation(chroma, rotate(MINOR_PROFILE, root));
+    if (majorScore > best.score) best = { key: root, mode: 'major', score: majorScore };
+    if (minorScore > best.score) best = { key: root, mode: 'minor', score: minorScore };
+  }
+  return best; // e.g. { key: 0, mode: 'major', score: 0.87 } → "C Major"
+};
+```
+
+#### ハーモナイザーのグレイン発音ロジック
+
+```typescript
+// 検出キーから各ボイスのセミトーンオフセットを計算
+const getVoicePitches = (rootNote: number, scale: Scale, intervals: number[]): number[] => {
+  return intervals.map(degree => scaleDegreeToCents(scale, degree));
+};
+
+// グレインスケジューラーをボイス分生成
+voices.forEach((voiceOffset, i) => {
+  scheduleGrain({
+    ...baseParams,
+    pitch: basePitch + voiceOffset,
+    gain: voiceMix[i],
+    detune: (Math.random() - 0.5) * detuneAmount,
+  });
+});
+```
+
+### 2.7 エフェクト（ポストプロセッシング）
 
 ```
 Reverb   — Web Audio ConvolverNode、Room Size / Wet
@@ -72,24 +160,28 @@ Compress — DynamicsCompressor（マスター）
 ### 3.1 レイアウト構成
 
 ```
-┌─────────────────────────────────────────────────────┐
-│  HEADER: プロジェクト名 / ファイルロード / プリセット  │
-├──────────────────────┬──────────────────────────────┤
-│                      │                              │
-│   WAVEFORM DISPLAY   │      GRAIN CLOUD VIEW        │
-│   (波形 + スクラブ)  │   (グレイン散布ビジュアル)   │
-│                      │                              │
-├──────────────────────┴──────────────────────────────┤
-│           GRAIN PARAMETERS PANEL                    │
-│  Position | Size | Density | Pitch | Scatter | Pan  │
-├─────────────────────┬───────────────────────────────┤
-│   ENVELOPE / WINDOW │   LFO × 2                    │
-├─────────────────────┴───────────────────────────────┤
-│              EFFECTS RACK                           │
-│   Reverb | Delay | Filter | Compressor              │
-├─────────────────────────────────────────────────────┤
-│   TRANSPORT: Play / Stop / Record | Master Volume   │
-└─────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│   HEADER: プロジェクト名 / ファイルロード / プリセット    │
+├───────────────────────┬──────────────────────────────────┤
+│                       │                                  │
+│   WAVEFORM DISPLAY    │       GRAIN CLOUD VIEW           │
+│   (波形 + スクラブ)   │   (グレイン散布ビジュアル)       │
+│                       │                                  │
+├───────────────────────┴──────────────────────────────────┤
+│              GRAIN PARAMETERS PANEL                      │
+│   Position | Size | Density | Pitch | Scatter | Pan      │
+├──────────────────────┬───────────────────────────────────┤
+│   ENVELOPE / WINDOW  │   LFO × 2                        │
+├──────────────────────┴───────────────────────────────────┤
+│              KEY DETECT & HARMONIZER                     │
+│  [Key: C Major ▼] [Scale ▼] [Re-detect]  Confidence: 87%│
+│  Voices: 3  |  Intervals: [3rd][5th]  |  Spread  Detune  │
+├──────────────────────────────────────────────────────────┤
+│              EFFECTS RACK                                │
+│   Reverb | Delay | Filter | Compressor                   │
+├──────────────────────────────────────────────────────────┤
+│   TRANSPORT: Play / Stop / Record  |  Master Volume      │
+└──────────────────────────────────────────────────────────┘
 ```
 
 ### 3.2 ビジュアライゼーション
@@ -131,22 +223,31 @@ Compress — DynamicsCompressor（マスター）
 ## 5. オーディオグラフ
 
 ```
-AudioBuffer
-    │
-    ▼
-GrainScheduler (ScriptProcessor / AudioWorklet)
-    │  ┌─ GrainNode × N (BufferSourceNode)
-    │  │    └─ GainNode (envelope)
-    │  │    └─ StereoPannerNode
-    │  └─ ...
-    ▼
-GainNode (Master Gain)
-    ├──▶ ConvolverNode (Reverb)  ──┐
-    ├──▶ DelayNode (Delay)       ──┼──▶ GainNode (Wet Mix) ──▶ MasterGain
-    ├──▶ BiquadFilterNode        ──┘
-    └──▶ DynamicsCompressorNode
-    ▼
-AudioContext.destination
+AudioBuffer ──▶ KeyDetector (offline FFT → chroma → K-S algorithm)
+                    │ detectedKey, scale
+                    ▼
+              HarmonizerConfig (intervals, spread, detune)
+                    │ voicePitches[]
+                    │
+AudioBuffer ──┬──▶ GrainScheduler[0] (dry / base pitch)  ──┐
+              ├──▶ GrainScheduler[1] (+voice 1 semitones) ──┤
+              ├──▶ GrainScheduler[2] (+voice 2 semitones) ──┤
+              └──▶ GrainScheduler[N] ...                  ──┘
+                    │  各 Scheduler 内部:                    │
+                    │  GrainNode × N (BufferSourceNode)      │
+                    │    └─ GainNode (envelope)              │
+                    │    └─ StereoPannerNode                 │
+                    ▼                                        │
+              GainNode (Voice Mix) ◀──────────────────────  ┘
+                    │
+                    ▼
+              GainNode (Master Gain)
+                    ├──▶ ConvolverNode (Reverb)  ──┐
+                    ├──▶ DelayNode (Delay)       ──┼──▶ GainNode (Wet Mix) ──▶ MasterGain
+                    ├──▶ BiquadFilterNode        ──┘
+                    └──▶ DynamicsCompressorNode
+                    ▼
+              AudioContext.destination
 ```
 
 ### 5.1 グレインスケジューラーのロジック
@@ -209,6 +310,17 @@ const scheduleGrain = (currentTime: number) => {
 - [ ] グレインウィンドウ形状
 - [ ] LFO × 2 実装
 
+### Phase 3.5 — キー検出 & ハーモナイザー
+- [ ] OfflineAudioContext + AnalyserNode でクロマベクトル抽出
+- [ ] Krumhansl-Schmuckler アルゴリズム実装（KeyDetector.ts）
+- [ ] 12キー × Major/Minor プロファイル相関計算
+- [ ] スケールテーブル定義（Major / Minor / モード / ペンタトニック）
+- [ ] HarmonizerEngine: ボイス別 GrainScheduler 管理
+- [ ] Voice Mix / Detune / Spread パラメータ接続
+- [ ] KeyDetect UI（検出結果表示・手動オーバーライド・スケール選択）
+- [ ] Harmonizer UI（ボイス数・インターバルボタン・Chord Mode セレクター）
+- [ ] Lock to Scale（Pitch ノブをスケール音度にスナップ）
+
 ### Phase 4 — エフェクト
 - [ ] Reverb（IR畳み込み）
 - [ ] フィードバックディレイ
@@ -248,9 +360,13 @@ const scheduleGrain = (currentTime: number) => {
 ```
 src/
 ├── audio/
-│   ├── GrainEngine.ts      # グレインスケジューラー
-│   ├── GrainNode.ts        # 個別グレイン管理
+│   ├── GrainEngine.ts        # グレインスケジューラー（マルチボイス対応）
+│   ├── GrainNode.ts          # 個別グレイン管理
 │   ├── LFO.ts
+│   ├── key/
+│   │   ├── KeyDetector.ts    # クロマ抽出 + K-S アルゴリズム
+│   │   ├── scales.ts         # スケールテーブル定義
+│   │   └── harmonizer.ts     # ボイス別ピッチオフセット計算
 │   └── effects/
 │       ├── Reverb.ts
 │       ├── Delay.ts
@@ -260,9 +376,11 @@ src/
 │   ├── GrainCloud.tsx
 │   ├── Knob.tsx
 │   ├── ParameterPanel.tsx
+│   ├── KeyDetectPanel.tsx    # キー表示・手動選択・信頼度バッジ
+│   ├── HarmonizerPanel.tsx   # ボイス数・インターバル・Chord Mode
 │   └── EffectsRack.tsx
 ├── store/
-│   └── synthStore.ts       # Zustand store
+│   └── synthStore.ts         # Zustand store（harmonizer state 含む）
 ├── presets/
 │   └── index.ts
 └── App.tsx
