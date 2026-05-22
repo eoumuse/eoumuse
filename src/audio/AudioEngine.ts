@@ -57,7 +57,7 @@ export class AudioEngine {
 
   private ensureContext() {
     if (!this.ctx) {
-      this.ctx = new AudioContext()
+      this.ctx = new AudioContext({ sampleRate: 48000 })
       this.masterGainNode = this.ctx.createGain()
       this.masterGainNode.gain.value = this.masterGain
       this.masterGainNode.connect(this.ctx.destination)
