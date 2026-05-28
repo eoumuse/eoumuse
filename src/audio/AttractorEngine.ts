@@ -240,6 +240,13 @@ export class AttractorEngine {
     return (nx * (b.x[1] - b.x[0]) + b.x[0]) * this.scaleForType()
   }
 
+  /** Convert world-space X back to normalized nx (0..1). */
+  nxFromWorldX(worldX: number): number {
+    const b     = BOUNDS[this.params.type]
+    const scale = this.scaleForType()
+    return Math.max(0, Math.min(1, (worldX / scale - b.x[0]) / (b.x[1] - b.x[0])))
+  }
+
   /** Convert raw trail x value to normalized nx (0..1). */
   trailPointNx(trailX: number): number {
     const b = BOUNDS[this.params.type]

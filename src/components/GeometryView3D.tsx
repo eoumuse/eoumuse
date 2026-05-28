@@ -4,13 +4,14 @@ import { useSynthStore } from '../store/synthStore'
 import { SceneManager } from '../three/SceneManager'
 import { AttractorParticles } from '../three/AttractorParticles'
 import { AttractorVisualizer } from '../three/AttractorVisualizer'
+import { CorpusContour } from '../three/CorpusContour'
+import { LoopPlaneVis } from '../three/LoopPlaneVis'
 import { NodeMesh } from '../three/NodeMesh'
 import { AgentSphere } from '../three/AgentSphere'
-import { LoopPlaneVis } from '../three/LoopPlaneVis'
 import { AttractorEngine } from '../audio/AttractorEngine'
 import { audioEngine } from '../audio/AudioEngine'
 
-// Project mouse (0..1) onto plane perpendicular to camera through attractor center
+// Project mouse (0..1) onto plane perpendicular to camera through world center
 function projectMouseTo3D(
   cx: number, cy: number,
   camera: THREE.PerspectiveCamera,
@@ -24,24 +25,28 @@ function projectMouseTo3D(
   return raycaster.ray.intersectPlane(plane, hit) ? hit : null
 }
 
-export function GeometryView3D() {
-  const canvasRef    = useRef<HTMLCanvasElement>(null)
-  const sceneRef     = useRef<SceneManager | null>(null)
-  const bgRef        = useRef<AttractorParticles | null>(null)
-  const liveVisRef   = useRef<AttractorVisualizer | null>(null)
-  const loopVisRef   = useRef<LoopPlaneVis | null>(null)
-  const nodeMeshRef  = useRef<NodeMesh | null>(null)
-  const agentRef     = useRef<AgentSphere | null>(null)
-  const engineRef    = useRef<AttractorEngine | null>(null)
-  const lastTickRef  = useRef<number>(performance.now())
+type DragMode = 'perturb' | 'loopStart' | 'loopEnd'
 
-  // Interaction state (refs = no re-render, read live in animation loop)
-  const mousePosRef     = useRef({ cx: 0.5, cy: 0.5 })
-  const isOverRef       = useRef(false)
-  const isGrabbingRef   = useRef(false)
-  const perturbSphRef   = useRef<THREE.Mesh | null>(null)
-  const connLineRef     = useRef<THREE.Line | null>(null)
-  const connPosRef      = useRef<THREE.BufferAttribute | null>(null)
+export function GeometryView3D() {
+  const canvasRef      = useRef<HTMLCanvasElement>(null)
+  const sceneRef       = useRef<SceneManager | null>(null)
+  const bgRef          = useRef<AttractorParticles | null>(null)
+  const liveVisRef     = useRef<AttractorVisualizer | null>(null)
+  const corpusRef      = useRef<CorpusContour | null>(null)
+  const loopVisRef     = useRef<LoopPlaneVis | null>(null)
+  const nodeMeshRef    = useRef<NodeMesh | null>(null)
+  const agentRef       = useRef<AgentSphere | null>(null)
+  const engineRef      = useRef<AttractorEngine | null>(null)
+  const lastTickRef    = useRef<number>(performance.now())
+
+  // Interaction state
+  const mousePosRef    = useRef({ cx: 0.5, cy: 0.5 })
+  const isOverRef      = useRef(false)
+  const isGrabbingRef  = useRef(false)
+  const dragModeRef    = useRef<DragMode>('perturb')
+  const perturbSphRef  = useRef<THREE.Mesh | null>(null)
+  const connLineRef    = useRef<THREE.Line | null>(null)
+  const connPosRef     = useRef<THREE.BufferAttribute | null>(null)
 
   const nodes            = useSynthStore((s) => s.nodes)
   const currentNodeIndex = useSynthStore((s) => s.currentNodeIndex)
@@ -63,6 +68,9 @@ export function GeometryView3D() {
 
     const liveVis = new AttractorVisualizer(sm.scene, engine.trailLength)
     liveVisRef.current = liveVis
+
+    const corpus = new CorpusContour(sm.scene)
+    corpusRef.current = corpus
 
     const loopVis = new LoopPlaneVis(sm.scene)
     loopVisRef.current = loopVis
@@ -96,7 +104,7 @@ export function GeometryView3D() {
     sm.scene.add(connLine)
     connLineRef.current = connLine
 
-    // ── Mouse event handlers ──────────────────────────────────────────────
+    // ── Mouse handlers ────────────────────────────────────────────────────
     const norm = (e: MouseEvent) => {
       const r = canvas.getBoundingClientRect()
       return { cx: (e.clientX - r.left) / r.width, cy: (e.clientY - r.top) / r.height }
@@ -105,30 +113,27 @@ export function GeometryView3D() {
     let lastClickTime = 0
     let clickStartPos = { x: 0, y: 0 }
 
-    const onMove     = (e: MouseEvent) => { mousePosRef.current = norm(e) }
-    const onEnter    = ()              => { isOverRef.current = true }
-    const onLeave    = ()              => {
-      isOverRef.current     = false
-      isGrabbingRef.current = false
+    const onMove    = (e: MouseEvent) => { mousePosRef.current = norm(e) }
+    const onEnter   = () => { isOverRef.current = true }
+    const onLeave   = () => {
+      isOverRef.current = false; isGrabbingRef.current = false
       const eng = engineRef.current
       if (eng) eng.perturbStrength = 0
       ;(perturbSph.material as THREE.MeshBasicMaterial).opacity = 0
       ;(connLine.material  as THREE.LineBasicMaterial ).opacity = 0
     }
-    const onDown     = (e: MouseEvent) => {
+    const onDown    = (e: MouseEvent) => {
       if (e.button !== 0) return
       isGrabbingRef.current = true
       clickStartPos = { x: e.clientX, y: e.clientY }
     }
-    const onUp       = (e: MouseEvent) => { if (e.button === 0) isGrabbingRef.current = false }
-    const onClick    = (e: MouseEvent) => {
-      // Double-click detection → chaos kick
+    const onUp      = (e: MouseEvent) => { if (e.button === 0) isGrabbingRef.current = false }
+    const onClick   = (e: MouseEvent) => {
       const now = Date.now()
-      const dx  = e.clientX - clickStartPos.x
-      const dy  = e.clientY - clickStartPos.y
+      const dx = e.clientX - clickStartPos.x, dy = e.clientY - clickStartPos.y
       if (Math.sqrt(dx*dx + dy*dy) < 6 && now - lastClickTime < 380) {
         engineRef.current?.kickChaos()
-        ;(perturbSph.material as THREE.MeshBasicMaterial).opacity = 1.0
+        ;(perturbSph.material as THREE.MeshBasicMaterial).opacity = 1
         setTimeout(() => {
           ;(perturbSph.material as THREE.MeshBasicMaterial).opacity = isOverRef.current ? 0.28 : 0
         }, 200)
@@ -147,6 +152,7 @@ export function GeometryView3D() {
 
     // ── Animation loop ────────────────────────────────────────────────────
     const attractorCenter = new THREE.Vector3(0, 0, 2)
+    const LOOP_SNAP_DIST  = 0.4   // world units — snap to loop plane within this distance
 
     sm.startAnimation((time) => {
       const now = performance.now()
@@ -165,26 +171,61 @@ export function GeometryView3D() {
         eng.semitonesPerOrbit = store.semitonesPerOrbit
         eng.pitchWrap         = store.pitchWrap
 
-        // Mouse → 3D influence
+        // Mouse → 3D hit point
         const isOver  = isOverRef.current
         const isGrab  = isGrabbingRef.current
         const { cx, cy } = mousePosRef.current
         const hit = isOver ? projectMouseTo3D(cx, cy, sm.camera, attractorCenter) : null
 
+        // Determine drag mode based on proximity to loop planes
+        if (hit && store.loopEnabled) {
+          const startX = eng.nxToWorldX(store.loopStart)
+          const endX   = eng.nxToWorldX(store.loopEnd)
+          const ds     = Math.abs(hit.x - startX)
+          const de     = Math.abs(hit.x - endX)
+
+          if (!isGrab) {
+            // Update drag mode only when not currently dragging
+            if (ds < LOOP_SNAP_DIST && ds < de) dragModeRef.current = 'loopStart'
+            else if (de < LOOP_SNAP_DIST)        dragModeRef.current = 'loopEnd'
+            else                                  dragModeRef.current = 'perturb'
+          }
+        } else if (!isGrab) {
+          dragModeRef.current = 'perturb'
+        }
+
+        // Update canvas cursor
+        const wantCursor = (dragModeRef.current !== 'perturb') ? 'ew-resize' : 'crosshair'
+        if (canvas.style.cursor !== wantCursor) canvas.style.cursor = wantCursor
+
         if (hit) {
           const s = eng.scaleForType()
-          eng.perturbTarget   = { x: hit.x / s, y: hit.y / s, z: hit.z / s }
-          eng.perturbStrength = isGrab ? 1.2 : 0
 
-          perturbSph.position.copy(hit)
-          ;(perturbSph.material as THREE.MeshBasicMaterial).opacity = isGrab ? 0.85 : 0
+          if (isGrab && dragModeRef.current !== 'perturb') {
+            // ── Loop plane drag ──────────────────────────────────────────
+            const nx = eng.nxFromWorldX(hit.x)
+            if (dragModeRef.current === 'loopStart') {
+              store.setLoopStart(Math.max(0, Math.min(nx, store.loopEnd - 0.02)))
+            } else {
+              store.setLoopEnd(Math.max(store.loopStart + 0.02, Math.min(nx, 1)))
+            }
+            eng.perturbStrength = 0
+            ;(perturbSph.material as THREE.MeshBasicMaterial).opacity = 0
+            ;(connLine.material  as THREE.LineBasicMaterial ).opacity = 0
+          } else {
+            // ── Attractor perturbation ───────────────────────────────────
+            eng.perturbTarget   = { x: hit.x / s, y: hit.y / s, z: hit.z / s }
+            eng.perturbStrength = isGrab ? 1.2 : 0
 
-          // Update connection line: head → target
-          const cp = connPosRef.current!
-          cp.setXYZ(0, eng.state.x * s, eng.state.y * s, eng.state.z * s)
-          cp.setXYZ(1, hit.x, hit.y, hit.z)
-          cp.needsUpdate = true
-          ;(connLine.material as THREE.LineBasicMaterial).opacity = isGrab ? 0.55 : 0
+            perturbSph.position.copy(hit)
+            ;(perturbSph.material as THREE.MeshBasicMaterial).opacity = isGrab ? 0.85 : 0
+
+            const cp = connPosRef.current!
+            cp.setXYZ(0, eng.state.x * s, eng.state.y * s, eng.state.z * s)
+            cp.setXYZ(1, hit.x, hit.y, hit.z)
+            cp.needsUpdate = true
+            ;(connLine.material as THREE.LineBasicMaterial).opacity = isGrab ? 0.55 : 0
+          }
         } else {
           eng.perturbStrength = 0
           ;(perturbSph.material as THREE.MeshBasicMaterial).opacity = 0
@@ -196,7 +237,6 @@ export function GeometryView3D() {
         store.setAttractorState(eng.state.nx, eng.state.ny, eng.state.nz, eng.state.vortexPitch)
 
         if (store.attractorLinked && store.isPlaying) {
-          // Remap nx into loop zone so grains always read within the loop region
           const pos = store.loopEnabled
             ? store.loopStart + eng.state.nx * (store.loopEnd - store.loopStart)
             : eng.state.nx
@@ -207,6 +247,8 @@ export function GeometryView3D() {
 
         const s = eng.scaleForType()
         agent.setTargetPosition(eng.state.x * s, eng.state.y * s, eng.state.z * s)
+        agent.setScatter(store.scatter)
+
         liveVis.update(eng, store.loopStart, store.loopEnd, store.loopEnabled)
         loopVis.update(eng, store.loopStart, store.loopEnd, store.loopEnabled)
       }
@@ -236,11 +278,14 @@ export function GeometryView3D() {
     }
   }, [])
 
+  // Update corpus contour when nodes change
   useEffect(() => {
-    const sm = sceneRef.current
-    const nm = nodeMeshRef.current
+    const sm     = sceneRef.current
+    const nm     = nodeMeshRef.current
+    const corpus = corpusRef.current
     if (!sm || !nm) return
     nm.updateNodes(nodes, sm.scene, currentNodeIndex)
+    corpus?.update(nodes)
   }, [nodes, currentNodeIndex])
 
   useEffect(() => {
@@ -272,7 +317,8 @@ export function GeometryView3D() {
         pointerEvents: 'none', userSelect: 'none',
         textTransform: 'uppercase', lineHeight: '1.8', textAlign: 'right',
       }}>
-        Drag: pull　·　Right drag: orbit　·　Double-click: chaos kick　·　Scroll: zoom
+        Drag: pull attractor　·　Near loop plane: drag to move<br />
+        Right drag: orbit　·　Double-click: chaos　·　Scroll: zoom
       </div>
     </div>
   )
