@@ -6,6 +6,7 @@ import { AttractorParticles } from '../three/AttractorParticles'
 import { AttractorVisualizer } from '../three/AttractorVisualizer'
 import { NodeMesh } from '../three/NodeMesh'
 import { AgentSphere } from '../three/AgentSphere'
+import { LoopPlaneVis } from '../three/LoopPlaneVis'
 import { AttractorEngine } from '../audio/AttractorEngine'
 import { audioEngine } from '../audio/AudioEngine'
 
@@ -28,6 +29,7 @@ export function GeometryView3D() {
   const sceneRef     = useRef<SceneManager | null>(null)
   const bgRef        = useRef<AttractorParticles | null>(null)
   const liveVisRef   = useRef<AttractorVisualizer | null>(null)
+  const loopVisRef   = useRef<LoopPlaneVis | null>(null)
   const nodeMeshRef  = useRef<NodeMesh | null>(null)
   const agentRef     = useRef<AgentSphere | null>(null)
   const engineRef    = useRef<AttractorEngine | null>(null)
@@ -61,6 +63,9 @@ export function GeometryView3D() {
 
     const liveVis = new AttractorVisualizer(sm.scene, engine.trailLength)
     liveVisRef.current = liveVis
+
+    const loopVis = new LoopPlaneVis(sm.scene)
+    loopVisRef.current = loopVis
 
     const nodeMesh = new NodeMesh()
     nodeMeshRef.current = nodeMesh
@@ -191,14 +196,19 @@ export function GeometryView3D() {
         store.setAttractorState(eng.state.nx, eng.state.ny, eng.state.nz, eng.state.vortexPitch)
 
         if (store.attractorLinked && store.isPlaying) {
-          audioEngine.position  = eng.state.nx
+          // Remap nx into loop zone so grains always read within the loop region
+          const pos = store.loopEnabled
+            ? store.loopStart + eng.state.nx * (store.loopEnd - store.loopStart)
+            : eng.state.nx
+          audioEngine.position  = pos
           audioEngine.pitch     = eng.state.vortexPitch
           audioEngine.grainSize = 10 + eng.state.nz * 1990
         }
 
         const s = eng.scaleForType()
         agent.setTargetPosition(eng.state.x * s, eng.state.y * s, eng.state.z * s)
-        liveVis.update(eng)
+        liveVis.update(eng, store.loopStart, store.loopEnd, store.loopEnabled)
+        loopVis.update(eng, store.loopStart, store.loopEnd, store.loopEnabled)
       }
 
       bg.update(time)

@@ -49,7 +49,7 @@ const DEFAULTS: Record<AttractorType, AttractorParams> = {
 }
 
 // Approximate bounding boxes per attractor for normalization
-const BOUNDS: Record<AttractorType, { x: [number,number], y: [number,number], z: [number,number] }> = {
+export const BOUNDS: Record<AttractorType, { x: [number,number], y: [number,number], z: [number,number] }> = {
   lorenz:  { x: [-20, 20], y: [-28, 28], z: [0, 50]   },
   rossler: { x: [-12, 12], y: [-12, 12], z: [0, 25]   },
   thomas:  { x: [-5,  5],  y: [-5,  5],  z: [-5, 5]   },
@@ -234,6 +234,18 @@ export class AttractorEngine {
   }
 
   /** Kick the attractor into a completely different region — chaotic jump. */
+  /** Convert normalized nx (0..1) to world-space X, accounting for scale. */
+  nxToWorldX(nx: number): number {
+    const b = BOUNDS[this.params.type]
+    return (nx * (b.x[1] - b.x[0]) + b.x[0]) * this.scaleForType()
+  }
+
+  /** Convert raw trail x value to normalized nx (0..1). */
+  trailPointNx(trailX: number): number {
+    const b = BOUNDS[this.params.type]
+    return Math.max(0, Math.min(1, (trailX - b.x[0]) / (b.x[1] - b.x[0])))
+  }
+
   kickChaos() {
     const b = BOUNDS[this.params.type]
     const rx = (b.x[1] - b.x[0]) * 0.7

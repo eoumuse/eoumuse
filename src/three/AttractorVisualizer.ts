@@ -86,7 +86,7 @@ export class AttractorVisualizer {
     scene.add(this.headLight)
   }
 
-  update(engine: AttractorEngine) {
+  update(engine: AttractorEngine, loopStart = 0, loopEnd = 1, loopEnabled = false) {
     const trail  = engine.trail
     const len    = engine.trailLength
     const head   = engine.trailHead
@@ -114,26 +114,35 @@ export class AttractorVisualizer {
       lp[i * 3 + 1] = py
       lp[i * 3 + 2] = pz
 
+      // Is this trail point inside the loop zone?
+      const nx     = engine.trailPointNx(trail[src])
+      const inLoop = loopEnabled && nx >= loopStart && nx <= loopEnd
+
       // Gradient: dark amber → ochre(0.82,0.57,0.12) → bright gold(1,0.87,0.22)
       let r: number, g: number, b: number
       if (age < 0.6) {
         const t = age / 0.6
-        // dark amber(0.45,0.28,0.04) → warm ochre(0.82,0.57,0.12)
         r = 0.45 + t * 0.37
         g = 0.28 + t * 0.29
         b = 0.04 + t * 0.08
       } else {
         const t = (age - 0.6) / 0.4
-        // warm ochre(0.82,0.57,0.12) → bright gold(1.0,0.87,0.22)
         r = 0.82 + t * 0.18
         g = 0.57 + t * 0.30
         b = 0.12 + t * 0.10
       }
-      // Fade out oldest 25%
-      const fade = Math.min(1, age * 4.0)
-      lc[i * 3]     = r * fade
-      lc[i * 3 + 1] = g * fade
-      lc[i * 3 + 2] = b * fade
+
+      if (loopEnabled && !inLoop) {
+        // Outside loop: desaturate to dim gray
+        const gray = (r + g + b) / 3 * 0.28
+        r = gray; g = gray; b = gray
+      }
+
+      const fade   = Math.min(1, age * 4.0)
+      const bright = (loopEnabled && inLoop) ? 1.6 : 1.0
+      lc[i * 3]     = Math.min(1, r * fade * bright)
+      lc[i * 3 + 1] = Math.min(1, g * fade * bright)
+      lc[i * 3 + 2] = Math.min(1, b * fade * bright)
 
       // Glow layer: every 4th point
       if (i % 4 === 0) {
