@@ -61,6 +61,7 @@ interface SynthState {
   harmonizerChordMode: string
   harmonizerVoiceGain: number
   harmonizerDetune: number
+  harmonizerSpread: number
 
   // Key detection
   detectedKey: string
@@ -80,6 +81,15 @@ interface SynthState {
   setHarmonizerChordMode: (v: string) => void
   setHarmonizerVoiceGain: (v: number) => void
   setHarmonizerDetune: (v: number) => void
+  setHarmonizerSpread: (v: number) => void
+
+  // Loop zone
+  loopEnabled: boolean
+  loopStart: number    // 0..1
+  loopEnd: number      // 0..1
+  setLoopEnabled: (v: boolean) => void
+  setLoopStart: (v: number) => void
+  setLoopEnd: (v: number) => void
 
   // Key detection setters
   setDetectedKey: (key: string, confidence: number) => void
@@ -146,7 +156,12 @@ export const useSynthStore = create<SynthState>((set) => ({
   harmonizerEnabled: false,
   harmonizerChordMode: 'Triad',
   harmonizerVoiceGain: 0.35,
-  harmonizerDetune: 8,
+  harmonizerDetune: 12,
+  harmonizerSpread: 0.85,
+
+  loopEnabled: true,
+  loopStart: 0.15,
+  loopEnd: 0.85,
 
   detectedKey: '',
   detectedKeyConfidence: 0,
@@ -163,6 +178,11 @@ export const useSynthStore = create<SynthState>((set) => ({
   setHarmonizerChordMode: (v) => set({ harmonizerChordMode: v }),
   setHarmonizerVoiceGain: (v) => set({ harmonizerVoiceGain: v }),
   setHarmonizerDetune:    (v) => set({ harmonizerDetune: v }),
+  setHarmonizerSpread:    (v) => set({ harmonizerSpread: v }),
+
+  setLoopEnabled: (v) => set({ loopEnabled: v }),
+  setLoopStart:   (v) => set({ loopStart: v }),
+  setLoopEnd:     (v) => set({ loopEnd: v }),
 
   setDetectedKey: (key, confidence) => set({ detectedKey: key, detectedKeyConfidence: confidence }),
 

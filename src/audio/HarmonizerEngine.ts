@@ -7,18 +7,26 @@ export const SCALES: Record<string, number[]> = {
 }
 
 export const CHORD_MODES: Record<string, number[]> = {
-  'Unison': [0],
-  '3rd':    [0, 4],
-  '5th':    [0, 7],
-  'Triad':  [0, 4, 7],
-  '7th':    [0, 4, 7, 11],
-  'Power':  [0, 7, 12],
-  'Octave': [0, 12],
+  'Unison':   [0],
+  'Oct':      [0, 12],
+  '5th':      [0, 7],
+  'Power':    [0, 7, 12],
+  'Triad':    [0, 4, 7],
+  'Min':      [0, 3, 7],
+  '7th':      [0, 4, 7, 11],
+  'Min7':     [0, 3, 7, 10],
+  '9th':      [0, 4, 7, 14],
+  'Sus4':     [0, 5, 7],
+  'Stack4':   [0, 5, 10, 15],   // stacked perfect 4ths — dreamy shimmer
+  'Shimmer':  [0, 12, 19, 24],  // octave + 5th + 2oct shimmer
 }
 
 interface HarmonizerVoice {
   pitchOffsetSemitones: number
   nextGrainTime: number
+  panPosition: number   // base pan -1..1 (multiplied by spread)
+  detunePhase: number   // current oscillator phase for detune drift
+  detuneRate: number    // Hz — how fast the drift oscillates (per voice)
 }
 
 export class HarmonizerEngine {
@@ -31,7 +39,8 @@ export class HarmonizerEngine {
   rootSemitone = 0
   chordMode = 'Triad'
   voiceGain = 0.35
-  detune = 8
+  detune = 12      // cents — peak detune for oscillation
+  spread = 0.85    // stereo spread 0..1
 
   constructor(ctx?: AudioContext, masterGainNode?: GainNode) {
     if (ctx && masterGainNode) {
@@ -41,7 +50,6 @@ export class HarmonizerEngine {
     }
   }
 
-  /** Wire to the AudioEngine after its context is created */
   init(ctx: AudioContext, masterGainNode: GainNode): void {
     this.ctx = ctx
     this.masterGainNode = masterGainNode
@@ -50,90 +58,93 @@ export class HarmonizerEngine {
 
   private rebuildVoices(): void {
     const intervals = CHORD_MODES[this.chordMode] ?? [0, 4, 7]
-    // Skip first interval (0 = unison, that's the main engine)
-    const harmonyIntervals = intervals.slice(1)
+    const harmonyIntervals = intervals.slice(1)   // skip unison (main engine handles that)
+    const n   = harmonyIntervals.length
     const now = this.ctx ? this.ctx.currentTime : 0
-    this.voices = harmonyIntervals.map((semitones) => ({
-      pitchOffsetSemitones: semitones,
-      nextGrainTime: now + 0.05,
-    }))
+
+    this.voices = harmonyIntervals.map((semitones, i) => {
+      // Spread voices evenly across the stereo field
+      const panPos = n === 0 ? 0 : n === 1 ? 0.55 : -1 + (2 * i / (n - 1))
+      return {
+        pitchOffsetSemitones: semitones,
+        nextGrainTime: now + 0.05 + i * 0.012,   // slight stagger at rebuild
+        panPosition:   panPos,
+        detunePhase:   Math.random() * Math.PI * 2,
+        detuneRate:    0.18 + Math.random() * 0.35, // 0.18–0.53 Hz slow oscillation
+      }
+    })
   }
 
-  setBuffer(buf: AudioBuffer | null): void {
-    this.buffer = buf
-  }
-
-  setChordMode(mode: string): void {
-    this.chordMode = mode
-    this.rebuildVoices()
-  }
-
-  setVoiceGain(v: number): void {
-    this.voiceGain = v
-  }
-
-  setDetune(v: number): void {
-    this.detune = v
-  }
+  setBuffer(buf: AudioBuffer | null): void { this.buffer = buf }
+  setChordMode(mode: string): void { this.chordMode = mode; this.rebuildVoices() }
+  setVoiceGain(v: number): void    { this.voiceGain = v }
+  setDetune(v: number): void       { this.detune = v }
+  setSpread(v: number): void       { this.spread = v }
 
   tick(
     basePosition: number,
     basePitchSemitones: number,
     grainSize: number,
     density: number,
-    scatter: number
+    scatter: number,
   ): void {
     if (!this.enabled || !this.buffer || !this.ctx || !this.masterGainNode) return
 
-    const lookahead = 0.1
-    const grainSizeSec = grainSize / 1000
+    const lookahead      = 0.1
+    const grainSizeSec   = grainSize / 1000
     const bufferDuration = this.buffer.duration
+    const now            = this.ctx.currentTime
 
     for (const voice of this.voices) {
+      // Advance slow detune oscillator (~25ms per tick call)
+      voice.detunePhase += voice.detuneRate * 0.025 * Math.PI * 2
+
+      // Oscillating detune + tiny per-grain random flutter
+      const driftCents = Math.sin(voice.detunePhase) * this.detune
+                       + (Math.random() - 0.5) * 4
+
       const totalSemitones = basePitchSemitones + voice.pitchOffsetSemitones + this.rootSemitone
-      const randomDetuneCents = (Math.random() - 0.5) * this.detune * 2
-      const playbackRate = Math.pow(2, totalSemitones / 12) * Math.pow(2, randomDetuneCents / 1200)
+      const playbackRate   = Math.pow(2, totalSemitones / 12) * Math.pow(2, driftCents / 1200)
 
-      if (voice.nextGrainTime < this.ctx.currentTime) {
-        voice.nextGrainTime = this.ctx.currentTime + 0.01
-      }
+      if (voice.nextGrainTime < now) voice.nextGrainTime = now + 0.01
 
-      while (voice.nextGrainTime < this.ctx.currentTime + lookahead) {
-        const src = this.ctx.createBufferSource()
-        src.buffer = this.buffer
+      while (voice.nextGrainTime < now + lookahead) {
+        const src       = this.ctx.createBufferSource()
+        src.buffer      = this.buffer
         src.playbackRate.value = playbackRate
 
-        const scatterRange = scatter * bufferDuration * 0.1
-        const rawOffset =
-          basePosition * bufferDuration + (Math.random() - 0.5) * scatterRange
+        const scatterRange  = scatter * bufferDuration * 0.1
+        const rawOffset     = basePosition * bufferDuration + (Math.random() - 0.5) * scatterRange
         const safeGrainSize = Math.min(grainSizeSec, bufferDuration * 0.5)
-        const offset = Math.max(0, Math.min(rawOffset, bufferDuration - safeGrainSize - 0.001))
-        const duration = safeGrainSize
+        const offset        = Math.max(0, Math.min(rawOffset, bufferDuration - safeGrainSize - 0.001))
 
-        src.start(voice.nextGrainTime, offset, duration)
+        src.start(voice.nextGrainTime, offset, safeGrainSize)
 
+        // Smooth bloom envelope (exponential → less click, more shimmer)
         const env = this.ctx.createGain()
-        env.gain.setValueAtTime(0, voice.nextGrainTime)
-        env.gain.linearRampToValueAtTime(this.voiceGain, voice.nextGrainTime + duration * 0.3)
-        env.gain.linearRampToValueAtTime(0, voice.nextGrainTime + duration)
+        const t0  = voice.nextGrainTime
+        const t1  = t0 + safeGrainSize
+        env.gain.setValueAtTime(0.0001, t0)
+        env.gain.exponentialRampToValueAtTime(this.voiceGain, t0 + safeGrainSize * 0.2)
+        env.gain.exponentialRampToValueAtTime(0.0001, t1)
+
+        // Stereo panner — each voice at its own position in the field
+        const panner       = this.ctx.createStereoPanner()
+        panner.pan.value   = voice.panPosition * this.spread
 
         src.connect(env)
-        env.connect(this.masterGainNode)
+        env.connect(panner)
+        panner.connect(this.masterGainNode!)
 
         const interval = 1 / Math.max(density, 0.5)
-        const jitter = (Math.random() - 0.5) * 0.01
+        const jitter   = (Math.random() - 0.5) * 0.015
         voice.nextGrainTime += interval + jitter
       }
     }
   }
 
-  start(): void {
-    this.rebuildVoices()
-  }
-
-  stop(): void {
-    // Voices stop naturally as they don't schedule new grains
-  }
+  start(): void { this.rebuildVoices() }
+  stop():  void { /* grains stop naturally */ }
 }
 
 export const harmonizerEngine = new HarmonizerEngine()
