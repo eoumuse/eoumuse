@@ -183,6 +183,12 @@ export class AudioEngine {
     }
   }
 
+  setFilterCutoffScheduled(freq: number, atTime: number, timeConstant: number): void {
+    if (this.filterNode) {
+      this.filterNode.frequency.setTargetAtTime(freq, atTime, timeConstant)
+    }
+  }
+
   setDelayTime(v: number): void {
     this.delayTime = v
     if (this.delayNode) {

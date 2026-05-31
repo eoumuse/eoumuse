@@ -6,6 +6,7 @@ import { TransportBar } from './components/TransportBar'
 import { WavePreview } from './components/WavePreview'
 import { EffectsPanel } from './components/EffectsPanel'
 import { HarmonizerPanel } from './components/HarmonizerPanel'
+import { SlinkGatePanel } from './components/SlinkGatePanel'
 
 function App() {
   return (
@@ -93,6 +94,7 @@ function App() {
             <DropZone />
             <WavePreview />
             <EffectsPanel />
+            <SlinkGatePanel />
             <HarmonizerPanel />
             <AttractorPanel />
             <AgentPanel />
