@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { GeometryView3D } from './components/GeometryView3D'
 import { DropZone } from './components/DropZone'
 import { AgentPanel } from './components/AgentPanel'
@@ -6,8 +7,12 @@ import { TransportBar } from './components/TransportBar'
 import { WavePreview } from './components/WavePreview'
 import { EffectsPanel } from './components/EffectsPanel'
 import { HarmonizerPanel } from './components/HarmonizerPanel'
+import { ComplexSynthViz } from './components/ComplexSynthViz'
+
+type ViewMode = 'grain' | 'synth'
 
 function App() {
+  const [viewMode, setViewMode] = useState<ViewMode>('grain')
   return (
     <div style={{
       position: 'relative',
@@ -16,8 +21,12 @@ function App() {
       overflow: 'hidden',
       background: '#28282F',
     }}>
-      {/* Full screen 3D background */}
-      <GeometryView3D />
+      {/* Full screen background — swaps based on view mode */}
+      {viewMode === 'grain' ? <GeometryView3D /> : (
+        <div style={{ position: 'absolute', inset: 0 }}>
+          <ComplexSynthViz />
+        </div>
+      )}
 
       {/* UI Overlay */}
       <div style={{
@@ -59,68 +68,92 @@ function App() {
             <span className="sparkle" style={{ color: '#FFE629', fontSize: '16px', animationDelay: '0.7s' }}>✧</span>
           </div>
 
-          <div style={{
-            fontSize: '9px',
-            fontWeight: '700',
-            letterSpacing: '0.15em',
-            color: 'rgba(136, 136, 153, 0.5)',
-            textTransform: 'uppercase',
-          }}>
-            Granular Synthesizer
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {(['grain', 'synth'] as ViewMode[]).map(mode => (
+              <button
+                key={mode}
+                onClick={() => setViewMode(mode)}
+                style={{
+                  padding: '4px 12px',
+                  borderRadius: 20,
+                  border: viewMode === mode
+                    ? '1px solid rgba(255,230,41,0.6)'
+                    : '1px solid rgba(136,136,153,0.25)',
+                  background: viewMode === mode
+                    ? 'rgba(255,230,41,0.12)'
+                    : 'transparent',
+                  color: viewMode === mode ? '#FFE629' : 'rgba(136,136,153,0.5)',
+                  fontSize: 9,
+                  fontWeight: 700,
+                  letterSpacing: '0.15em',
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {mode === 'grain' ? 'GRAIN' : 'SYNTH'}
+              </button>
+            ))}
           </div>
         </header>
 
-        {/* Main content area */}
-        <div style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'row',
-          gap: '10px',
-          alignItems: 'flex-start',
-        }}>
-          {/* Left column */}
+        {/* Main content area — grain panels hidden in synth mode */}
+        {viewMode === 'grain' && (
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'row',
+            gap: '10px',
+            alignItems: 'flex-start',
+          }}>
+            {/* Left column */}
+            <div style={{
+              pointerEvents: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+              width: '260px',
+              flexShrink: 0,
+              overflowY: 'auto',
+              maxHeight: 'calc(100vh - 120px)',
+              paddingRight: '2px',
+            }}>
+              <DropZone />
+              <WavePreview />
+              <EffectsPanel />
+              <HarmonizerPanel />
+              <AttractorPanel />
+              <AgentPanel />
+            </div>
+
+            {/* Center spacer */}
+            <div style={{ flex: 1 }} />
+
+            {/* Right column */}
+            <div style={{
+              pointerEvents: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+              width: '180px',
+              flexShrink: 0,
+            }}>
+              <InfoPanel />
+            </div>
+          </div>
+        )}
+
+        {viewMode === 'synth' && <div style={{ flex: 1 }} />}
+
+        {/* Bottom transport bar — grain mode only */}
+        {viewMode === 'grain' && (
           <div style={{
             pointerEvents: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '10px',
             width: '260px',
-            flexShrink: 0,
-            overflowY: 'auto',
-            maxHeight: 'calc(100vh - 120px)',
-            paddingRight: '2px',
           }}>
-            <DropZone />
-            <WavePreview />
-            <EffectsPanel />
-            <HarmonizerPanel />
-            <AttractorPanel />
-            <AgentPanel />
+            <TransportBar />
           </div>
-
-          {/* Center spacer — 3D view shows through */}
-          <div style={{ flex: 1 }} />
-
-          {/* Right column: info overlay */}
-          <div style={{
-            pointerEvents: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '10px',
-            width: '180px',
-            flexShrink: 0,
-          }}>
-            <InfoPanel />
-          </div>
-        </div>
-
-        {/* Bottom transport bar */}
-        <div style={{
-          pointerEvents: 'auto',
-          width: '260px',
-        }}>
-          <TransportBar />
-        </div>
+        )}
       </div>
     </div>
   )
