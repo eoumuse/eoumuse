@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { GeometryView3D } from './components/GeometryView3D'
 import { DropZone } from './components/DropZone'
 import { AgentPanel } from './components/AgentPanel'
@@ -6,8 +7,27 @@ import { TransportBar } from './components/TransportBar'
 import { WavePreview } from './components/WavePreview'
 import { EffectsPanel } from './components/EffectsPanel'
 import { HarmonizerPanel } from './components/HarmonizerPanel'
+import { DrawingCanvas, DrawModeBar } from './components/DrawingCanvas'
+import { useSynthStore } from './store/synthStore'
+import type { DrawMode } from './store/synthStore'
 
 function App() {
+  const setDrawMode    = useSynthStore(s => s.setDrawMode)
+  const setDrawEnabled = useSynthStore(s => s.setDrawEnabled)
+  const drawEnabled    = useSynthStore(s => s.drawEnabled)
+
+  // Keyboard shortcuts: F=fm, P=pad, G=grain, X=glitch, D=toggle draw
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      const map: Record<string, DrawMode> = { f: 'fm', p: 'pad', g: 'grain', x: 'glitch' }
+      if (map[e.key]) { setDrawMode(map[e.key]); setDrawEnabled(true) }
+      if (e.key === 'd') setDrawEnabled(!drawEnabled)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [drawEnabled, setDrawMode, setDrawEnabled])
+
   return (
     <div style={{
       position: 'relative',
@@ -16,10 +36,13 @@ function App() {
       overflow: 'hidden',
       background: '#28282F',
     }}>
-      {/* Full screen 3D background */}
+      {/* Layer 0: 3D background */}
       <GeometryView3D />
 
-      {/* UI Overlay */}
+      {/* Layer 1: Drawing canvas (pointer-events in center, UI panels block from above) */}
+      <DrawingCanvas />
+
+      {/* Layer 2: UI Overlay — pointer-events: none on container, auto on panels */}
       <div style={{
         position: 'absolute',
         inset: 0,
@@ -28,6 +51,7 @@ function App() {
         flexDirection: 'column',
         padding: '16px',
         gap: '10px',
+        zIndex: 10,
       }}>
         {/* Header */}
         <header style={{
@@ -36,11 +60,7 @@ function App() {
           alignItems: 'center',
           justifyContent: 'space-between',
         }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-          }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span className="sparkle" style={{ color: '#FF2D9B', fontSize: '20px' }}>✦</span>
             <h1 style={{
               margin: 0,
@@ -58,7 +78,6 @@ function App() {
             </h1>
             <span className="sparkle" style={{ color: '#FFE629', fontSize: '16px', animationDelay: '0.7s' }}>✧</span>
           </div>
-
           <div style={{
             fontSize: '9px',
             fontWeight: '700',
@@ -66,11 +85,11 @@ function App() {
             color: 'rgba(136, 136, 153, 0.5)',
             textTransform: 'uppercase',
           }}>
-            Granular Synthesizer
+            Draw · Sound
           </div>
         </header>
 
-        {/* Main content area */}
+        {/* Main content */}
         <div style={{
           flex: 1,
           display: 'flex',
@@ -78,7 +97,7 @@ function App() {
           gap: '10px',
           alignItems: 'flex-start',
         }}>
-          {/* Left column */}
+          {/* Left column — blocks draw canvas below */}
           <div style={{
             pointerEvents: 'auto',
             display: 'flex',
@@ -98,10 +117,24 @@ function App() {
             <AgentPanel />
           </div>
 
-          {/* Center spacer — 3D view shows through */}
-          <div style={{ flex: 1 }} />
+          {/* Center — draw canvas is active here (no pointer-events from this div) */}
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            paddingBottom: '8px',
+            pointerEvents: 'none',
+            height: '100%',
+          }}>
+            {/* Mode toolbar floats at bottom-center */}
+            <div style={{ pointerEvents: 'auto' }}>
+              <DrawModeBar />
+            </div>
+          </div>
 
-          {/* Right column: info overlay */}
+          {/* Right column */}
           <div style={{
             pointerEvents: 'auto',
             display: 'flex',
@@ -115,10 +148,7 @@ function App() {
         </div>
 
         {/* Bottom transport bar */}
-        <div style={{
-          pointerEvents: 'auto',
-          width: '260px',
-        }}>
+        <div style={{ pointerEvents: 'auto', width: '260px' }}>
           <TransportBar />
         </div>
       </div>
@@ -134,60 +164,58 @@ function InfoPanel() {
       </div>
       <div style={{ padding: '12px', fontSize: '10px', color: 'rgba(136, 136, 153, 0.7)', lineHeight: '1.6' }}>
         <div style={{ marginBottom: '8px', color: '#FFE629', fontWeight: '700', letterSpacing: '0.1em' }}>
-          LORENZ ATTRACTOR
+          DRAW → SOUND
         </div>
-        <div style={{ color: 'rgba(255,240,255,0.5)' }}>
-          σ = 10 · ρ = 28 · β = 8/3
+        <div style={{ color: 'rgba(255,240,255,0.5)', marginBottom: '8px' }}>
+          Draw in the center to generate sound. X = pitch · Y = octave
         </div>
-        <div style={{ marginTop: '8px', color: '#FF2D9B', fontWeight: '600' }}>
-          dx/dt = σ(y−x)
+
+        <div style={{ marginBottom: '4px', color: '#00E5FF', fontWeight: '600' }}>FM</div>
+        <div style={{ color: 'rgba(255,240,255,0.4)', fontSize: '9px', marginBottom: '6px' }}>
+          2-operator FM synthesis — OPN metallic textures
         </div>
-        <div style={{ color: '#888899', fontWeight: '600' }}>
-          dy/dt = x(ρ−z)−y
+
+        <div style={{ marginBottom: '4px', color: '#FF6EC7', fontWeight: '600' }}>PAD</div>
+        <div style={{ color: 'rgba(255,240,255,0.4)', fontSize: '9px', marginBottom: '6px' }}>
+          Slow attack pads — iku sakan shimmer
         </div>
-        <div style={{ color: '#FFE629', fontWeight: '600' }}>
-          dz/dt = xy − βz
+
+        <div style={{ marginBottom: '4px', color: '#FFD700', fontWeight: '600' }}>GRAIN</div>
+        <div style={{ color: 'rgba(255,240,255,0.4)', fontSize: '9px', marginBottom: '6px' }}>
+          Granular from loaded sample
         </div>
+
+        <div style={{ marginBottom: '4px', color: '#FF4444', fontWeight: '600' }}>GLITCH</div>
+        <div style={{ color: 'rgba(255,240,255,0.4)', fontSize: '9px', marginBottom: '10px' }}>
+          Stutter + bitcrush — IDM noise
+        </div>
+
         <div style={{
-          marginTop: '12px',
-          padding: '8px',
-          borderRadius: '8px',
-          background: 'rgba(255, 45, 155, 0.06)',
-          border: '1px solid rgba(255, 45, 155, 0.2)',
-          color: 'rgba(255,240,255,0.5)',
+          padding: '6px 8px',
+          borderRadius: '6px',
+          background: 'rgba(255,45,155,0.06)',
+          border: '1px solid rgba(255,45,155,0.2)',
+          color: 'rgba(255,240,255,0.4)',
           fontSize: '9px',
           letterSpacing: '0.05em',
         }}>
-          Drop an audio sample to seed grain nodes. Hot pink sparkles = onset points. The agent orb traverses nodes in sync with playback.
+          Keys: F P G X = modes · D = toggle draw
         </div>
 
-        <div style={{ marginTop: '12px' }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            marginBottom: '4px',
-          }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#FF2D9B', boxShadow: '0 0 6px #FF2D9B' }} />
-            <span style={{ color: 'rgba(255,240,255,0.6)', fontSize: '9px' }}>Pink — hot pink trail</span>
-          </div>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            marginBottom: '4px',
-          }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#888899', boxShadow: '0 0 6px #888899' }} />
-            <span style={{ color: 'rgba(255,240,255,0.6)', fontSize: '9px' }}>Purple — attractor arms</span>
-          </div>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-          }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#FFE629', boxShadow: '0 0 6px #FFE629' }} />
-            <span style={{ color: 'rgba(255,240,255,0.6)', fontSize: '9px' }}>Cyan — crossing paths</span>
-          </div>
+        <div style={{ marginTop: '12px', color: '#FFE629', fontWeight: '700', letterSpacing: '0.1em' }}>
+          LORENZ ATTRACTOR
+        </div>
+        <div style={{ color: 'rgba(255,240,255,0.5)', marginTop: '4px' }}>
+          σ = 10 · ρ = 28 · β = 8/3
+        </div>
+        <div style={{ marginTop: '4px', color: '#FF2D9B', fontWeight: '600', fontSize: '9px' }}>
+          dx/dt = σ(y−x)
+        </div>
+        <div style={{ color: '#888899', fontWeight: '600', fontSize: '9px' }}>
+          dy/dt = x(ρ−z)−y
+        </div>
+        <div style={{ color: '#FFE629', fontWeight: '600', fontSize: '9px' }}>
+          dz/dt = xy − βz
         </div>
       </div>
     </div>

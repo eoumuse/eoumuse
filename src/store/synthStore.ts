@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 import type { AttractorType } from '../audio/AttractorEngine'
+import type { DrawMode } from '../audio/DrawSynthEngine'
+export type { DrawMode }
 
 export interface AudioNode3D {
   id: string
@@ -114,6 +116,12 @@ interface SynthState {
   setAttractorP3: (v: number) => void
   attractorVortexPitch: number  // live vortex pitch in semitones (-24..+24)
   setAttractorState: (nx: number, ny: number, nz: number, vortexPitch?: number) => void
+
+  // Drawing canvas
+  drawMode: DrawMode
+  setDrawMode: (m: DrawMode) => void
+  drawEnabled: boolean
+  setDrawEnabled: (v: boolean) => void
 }
 
 export const useSynthStore = create<SynthState>((set) => ({
@@ -206,4 +214,9 @@ export const useSynthStore = create<SynthState>((set) => ({
   setAttractorP2:    (v) => set({ attractorP2: v }),
   setAttractorP3:    (v) => set({ attractorP3: v }),
   setAttractorState: (nx, ny, nz, vortexPitch = 0) => set({ attractorNX: nx, attractorNY: ny, attractorNZ: nz, attractorVortexPitch: vortexPitch }),
+
+  drawMode: 'fm',
+  setDrawMode: (m) => set({ drawMode: m }),
+  drawEnabled: true,
+  setDrawEnabled: (v) => set({ drawEnabled: v }),
 }))

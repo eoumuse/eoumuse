@@ -1,4 +1,5 @@
 import { harmonizerEngine } from './HarmonizerEngine'
+import { drawSynthEngine } from './DrawSynthEngine'
 
 export class AudioEngine {
   ctx!: AudioContext
@@ -111,10 +112,14 @@ export class AudioEngine {
       this.mediaStreamDest = this.ctx.createMediaStreamDestination()
       this.masterGainNode.connect(this.mediaStreamDest)
 
-      // Wire harmonizer to this context
+      // Wire harmonizer and draw synth to this context
       harmonizerEngine.init(this.ctx, this.masterGainNode)
+      drawSynthEngine.init(this.ctx, this.masterGainNode)
     }
   }
+
+  // Allow external engines to share the audio context
+  initContext(): void { this.ensureContext() }
 
   startRecording(): void {
     if (!this.ctx) return
