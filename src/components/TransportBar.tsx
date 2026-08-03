@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useSynthStore } from '../store/synthStore'
 import { audioEngine } from '../audio/AudioEngine'
 
@@ -20,6 +20,26 @@ export function TransportBar() {
       setPlaying(true)
     }
   }, [isPlaying, audioLoaded, setPlaying])
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.code !== 'Space' || event.repeat || !audioLoaded) return
+
+      const target = event.target
+      if (
+        target instanceof HTMLElement &&
+        target.closest('button, input, textarea, select, [contenteditable="true"]')
+      ) {
+        return
+      }
+
+      event.preventDefault()
+      handlePlayStop()
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [audioLoaded, handlePlayStop])
 
   const handleRecord = useCallback(() => {
     if (!isPlaying) return
@@ -46,6 +66,8 @@ export function TransportBar() {
         <button
           onClick={handlePlayStop}
           disabled={!audioLoaded}
+          aria-label={isPlaying ? 'Stop playback' : 'Start playback'}
+          title={isPlaying ? 'Stop (Space)' : 'Play (Space)'}
           style={{
             width: '44px', height: '44px',
             borderRadius: '50%',
@@ -84,6 +106,11 @@ export function TransportBar() {
               : !audioLoaded ? 'LOAD SAMPLE'
               : '■ STOPPED'}
           </div>
+          {audioLoaded && !isRecording && (
+            <div style={{ fontSize: '8px', color: 'rgba(192,192,204,0.45)', letterSpacing: '0.08em', marginTop: '2px' }}>
+              SPACE · PLAY / STOP
+            </div>
+          )}
           {isRecording && (
             <div style={{ fontSize: '8px', color: '#FF2D9B', letterSpacing: '0.1em', marginTop: '2px' }}>
               <span className="rec-pulse" style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#FF2D9B', marginRight: 4 }} />
