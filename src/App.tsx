@@ -92,10 +92,10 @@ function App() {
           }}>
             <DropZone />
             <WavePreview />
-            <EffectsPanel />
-            <HarmonizerPanel />
             <AttractorPanel />
             <AgentPanel />
+            <HarmonizerPanel />
+            <EffectsPanel />
           </div>
 
           {/* Center spacer — 3D view shows through */}

@@ -22,14 +22,9 @@ const NODE_FRAGMENT = /* glsl */`
     vec2 uv = gl_PointCoord - 0.5;
     float r = length(uv) * 2.0;
 
-    // Star/sparkle shape
-    float angle = atan(uv.y, uv.x);
-    float spikes = 4.0;
-    float star = 0.5 + 0.5 * sin(angle * spikes);
-    float shapeR = r / (0.4 + 0.3 * star);
-
-    float glow = exp(-shapeR * 3.0);
-    float core = exp(-shapeR * 8.0);
+    // Round shape
+    float glow = exp(-r * 3.0);
+    float core = exp(-r * 8.0);
 
     if (glow < 0.01) discard;
     vec3 finalColor = mix(vColor, vec3(1.0), core * 0.8);

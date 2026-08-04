@@ -1,6 +1,24 @@
 import * as THREE from 'three'
 import type { AttractorEngine } from '../audio/AttractorEngine'
 
+let circleTexture: THREE.Texture | null = null
+function getCircleTexture(): THREE.Texture {
+  if (circleTexture) return circleTexture
+  const size = 64
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const ctx = canvas.getContext('2d')!
+  const grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2)
+  grad.addColorStop(0, 'rgba(255,255,255,1)')
+  grad.addColorStop(0.6, 'rgba(255,255,255,0.6)')
+  grad.addColorStop(1, 'rgba(255,255,255,0)')
+  ctx.fillStyle = grad
+  ctx.fillRect(0, 0, size, size)
+  circleTexture = new THREE.CanvasTexture(canvas)
+  return circleTexture
+}
+
 /**
  * Renders the live attractor trajectory as a glowing neon line.
  * Two layers: a crisp Line (1px, additive) for the path shape,
@@ -16,6 +34,7 @@ export class AttractorVisualizer {
   private glowPosAttr: THREE.BufferAttribute
   private glowColorAttr: THREE.BufferAttribute
   private glowPoints: THREE.Points
+  private haloPoints: THREE.Points
 
   private headMesh: THREE.Mesh
   private headLight: THREE.PointLight
@@ -42,7 +61,7 @@ export class AttractorVisualizer {
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       transparent: true,
-      opacity: 0.7,
+      opacity: 0.9,
     })
     this.line = new THREE.Line(this.lineGeom, lineMat)
     scene.add(this.line)
@@ -59,16 +78,33 @@ export class AttractorVisualizer {
     this.glowGeom.setDrawRange(0, 0)
 
     const glowMat = new THREE.PointsMaterial({
-      size: 0.06,
+      size: 0.08,
+      map: getCircleTexture(),
+      alphaMap: getCircleTexture(),
       vertexColors: true,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       transparent: true,
-      opacity: 0.55,
+      opacity: 0.7,
       sizeAttenuation: true,
     })
     this.glowPoints = new THREE.Points(this.glowGeom, glowMat)
     scene.add(this.glowPoints)
+
+    // ── Halo (shares the glow buffer — bigger, softer, dimmer outer bloom) ─
+    const haloMat = new THREE.PointsMaterial({
+      size: 0.22,
+      map: getCircleTexture(),
+      alphaMap: getCircleTexture(),
+      vertexColors: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      transparent: true,
+      opacity: 0.3,
+      sizeAttenuation: true,
+    })
+    this.haloPoints = new THREE.Points(this.glowGeom, haloMat)
+    scene.add(this.haloPoints)
 
     // ── Head: bright sphere at current attractor tip ───────────────────────
     const headGeo = new THREE.SphereGeometry(0.08, 12, 12)
@@ -178,6 +214,7 @@ export class AttractorVisualizer {
   dispose(scene: THREE.Scene) {
     scene.remove(this.line)
     scene.remove(this.glowPoints)
+    scene.remove(this.haloPoints)
     scene.remove(this.headMesh)
     scene.remove(this.headLight)
     this.lineGeom.dispose()
