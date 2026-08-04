@@ -8,6 +8,13 @@ export function WavePreview() {
   const canvasRef  = useRef<HTMLCanvasElement>(null)
   const rafRef     = useRef<number>(0)
   const dragRef    = useRef<'start' | 'end' | null>(null)
+  const lastFrameRef = useRef(0)
+  const waveformCacheRef = useRef<{
+    buffer: AudioBuffer
+    width: number
+    min: Float32Array
+    max: Float32Array
+  } | null>(null)
 
   const audioLoaded   = useSynthStore((s) => s.audioLoaded)
   const nodes         = useSynthStore((s) => s.nodes)
@@ -16,7 +23,7 @@ export function WavePreview() {
   const setLoopEnd    = useSynthStore((s) => s.setLoopEnd)
   const setLoopEnabled = useSynthStore((s) => s.setLoopEnabled)
 
-  const drawFrame = useCallback(() => {
+  const drawFrame = useCallback((time = 0) => {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
@@ -32,9 +39,13 @@ export function WavePreview() {
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
       ctx.fillText('DROP A SAMPLE', width / 2, height / 2)
-      rafRef.current = requestAnimationFrame(drawFrame)
       return
     }
+
+    if (document.hidden || time - lastFrameRef.current < 1000 / 30) {
+      return
+    }
+    lastFrameRef.current = time
 
     // Read loop state fresh each frame (avoid stale closure)
     const st   = useSynthStore.getState()
@@ -54,9 +65,35 @@ export function WavePreview() {
     }
 
     // Waveform
-    const nCh  = buffer.numberOfChannels
-    const len  = buffer.length
-    const step = Math.ceil(len / width)
+    let cache = waveformCacheRef.current
+    if (!cache || cache.buffer !== buffer || cache.width !== width) {
+      const min = new Float32Array(width)
+      const max = new Float32Array(width)
+      const channels = Array.from(
+        { length: buffer.numberOfChannels },
+        (_, channel) => buffer.getChannelData(channel),
+      )
+      const samplesPerPixel = Math.ceil(buffer.length / width)
+      const sampleStride = Math.max(1, Math.ceil(samplesPerPixel / 512))
+
+      for (let x = 0; x < width; x++) {
+        let low = 1
+        let high = -1
+        const start = x * samplesPerPixel
+        const end = Math.min(buffer.length, start + samplesPerPixel)
+        for (let sample = start; sample < end; sample += sampleStride) {
+          let mixed = 0
+          for (const channel of channels) mixed += channel[sample] ?? 0
+          mixed /= channels.length
+          if (mixed < low) low = mixed
+          if (mixed > high) high = mixed
+        }
+        min[x] = low === 1 ? 0 : low
+        max[x] = high === -1 ? 0 : high
+      }
+      cache = { buffer, width, min, max }
+      waveformCacheRef.current = cache
+    }
 
     for (let pass = 0; pass < (loopOn ? 2 : 1); pass++) {
       // pass 0 = full waveform (dim), pass 1 = in-loop bright tint
@@ -68,16 +105,9 @@ export function WavePreview() {
       ctx.lineWidth = 1
       let first = true
       for (let i = startI; i < endI; i++) {
-        let min = 1, max = -1
-        for (let j = 0; j < step; j++) {
-          let s = 0
-          for (let ch = 0; ch < nCh; ch++) s += buffer.getChannelData(ch)[i * step + j] ?? 0
-          const v = s / nCh
-          if (v < min) min = v; if (v > max) max = v
-        }
         const amp = height / 2
-        if (first) { ctx.moveTo(i, (1 + min) * amp); first = false }
-        else { ctx.lineTo(i, (1 + min) * amp); ctx.lineTo(i, (1 + max) * amp) }
+        if (first) { ctx.moveTo(i, (1 + cache.min[i]) * amp); first = false }
+        else { ctx.lineTo(i, (1 + cache.min[i]) * amp); ctx.lineTo(i, (1 + cache.max[i]) * amp) }
       }
       ctx.stroke()
     }
@@ -115,13 +145,23 @@ export function WavePreview() {
     ctx.shadowColor = '#FF6B4A'; ctx.shadowBlur = 8
     ctx.stroke(); ctx.shadowBlur = 0
 
-    rafRef.current = requestAnimationFrame(drawFrame)
   }, [nodes])
 
   useEffect(() => {
-    rafRef.current = requestAnimationFrame(drawFrame)
-    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current) }
-  }, [drawFrame])
+    waveformCacheRef.current = null
+    lastFrameRef.current = 0
+    let active = true
+    const tick = (time: number) => {
+      if (!active) return
+      drawFrame(time)
+      if (audioEngine.buffer) rafRef.current = requestAnimationFrame(tick)
+    }
+    rafRef.current = requestAnimationFrame(tick)
+    return () => {
+      active = false
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    }
+  }, [drawFrame, audioLoaded])
 
   useEffect(() => {
     const onUp = () => { dragRef.current = null }

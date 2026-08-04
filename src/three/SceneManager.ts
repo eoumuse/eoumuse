@@ -8,6 +8,8 @@ export class SceneManager {
   controls: OrbitControls
   private animationId: number | null = null
   private autoRotateTimeout: ReturnType<typeof setTimeout> | null = null
+  private lastFrameTime = 0
+  private readonly minFrameInterval = 1000 / 30
 
   constructor(canvas: HTMLCanvasElement) {
     this.scene = new THREE.Scene()
@@ -25,11 +27,12 @@ export class SceneManager {
 
     this.renderer = new THREE.WebGLRenderer({
       canvas,
-      antialias: true,
+      antialias: false,
       alpha: true,
+      powerPreference: 'high-performance',
     })
     this.renderer.setSize(canvas.clientWidth, canvas.clientHeight)
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25))
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping
     this.renderer.toneMappingExposure = 1.2
 
@@ -76,10 +79,12 @@ export class SceneManager {
 
   startAnimation(onFrame: (time: number) => void) {
     const tick = (time: number) => {
+      this.animationId = requestAnimationFrame(tick)
+      if (document.hidden || time - this.lastFrameTime < this.minFrameInterval) return
+      this.lastFrameTime = time
       this.controls.update()
       onFrame(time)
       this.renderer.render(this.scene, this.camera)
-      this.animationId = requestAnimationFrame(tick)
     }
     this.animationId = requestAnimationFrame(tick)
   }

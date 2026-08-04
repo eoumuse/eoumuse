@@ -37,7 +37,9 @@ export function GeometryView3D() {
   const nodeMeshRef    = useRef<NodeMesh | null>(null)
   const agentRef       = useRef<AgentSphere | null>(null)
   const engineRef      = useRef<AttractorEngine | null>(null)
-  const lastTickRef    = useRef<number>(performance.now())
+  const lastTickRef    = useRef<number>(0)
+  const lastStoreSyncRef = useRef(0)
+  const visualFrameRef = useRef(0)
 
   // Interaction state
   const mousePosRef    = useRef({ cx: 0.5, cy: 0.5 })
@@ -55,11 +57,12 @@ export function GeometryView3D() {
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
+    lastTickRef.current = performance.now()
 
     const sm = new SceneManager(canvas)
     sceneRef.current = sm
 
-    const bg = new AttractorParticles(2000)
+    const bg = new AttractorParticles(1200)
     sm.scene.add(bg.points)
     bgRef.current = bg
 
@@ -234,7 +237,10 @@ export function GeometryView3D() {
 
         eng.tick(dt)
 
-        store.setAttractorState(eng.state.nx, eng.state.ny, eng.state.nz, eng.state.vortexPitch)
+        if (now - lastStoreSyncRef.current >= 100) {
+          store.setAttractorState(eng.state.nx, eng.state.ny, eng.state.nz, eng.state.vortexPitch)
+          lastStoreSyncRef.current = now
+        }
 
         if (store.attractorLinked && store.isPlaying) {
           const pos = store.loopEnabled
@@ -252,8 +258,11 @@ export function GeometryView3D() {
         agent.setTargetPosition(eng.state.x * s, eng.state.y * s, eng.state.z * s)
         agent.setScatter(store.scatter)
 
-        liveVis.update(eng, store.loopStart, store.loopEnd, store.loopEnabled)
-        loopVis.update(eng, store.loopStart, store.loopEnd, store.loopEnabled)
+        visualFrameRef.current++
+        if (visualFrameRef.current % 2 === 0) {
+          liveVis.update(eng, store.loopStart, store.loopEnd, store.loopEnabled)
+          loopVis.update(eng, store.loopStart, store.loopEnd, store.loopEnabled)
+        }
       }
 
       bg.update(time)
@@ -320,8 +329,8 @@ export function GeometryView3D() {
         pointerEvents: 'none', userSelect: 'none',
         textTransform: 'uppercase', lineHeight: '1.8', textAlign: 'right',
       }}>
-        Drag: pull attractor　·　Near loop plane: drag to move<br />
-        Right drag: orbit　·　Double-click: chaos　·　Scroll: zoom
+        Drag: pull attractor · Near loop plane: drag to move<br />
+        Right drag: orbit · Double-click: chaos · Scroll: zoom
       </div>
     </div>
   )

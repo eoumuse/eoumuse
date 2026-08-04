@@ -1,4 +1,4 @@
-import { GeometryView3D } from './components/GeometryView3D'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { DropZone } from './components/DropZone'
 import { AgentPanel } from './components/AgentPanel'
 import { AttractorPanel } from './components/AttractorPanel'
@@ -7,7 +7,19 @@ import { WavePreview } from './components/WavePreview'
 import { EffectsPanel } from './components/EffectsPanel'
 import { HarmonizerPanel } from './components/HarmonizerPanel'
 
+const GeometryView3D = lazy(() =>
+  import('./components/GeometryView3D').then((module) => ({ default: module.GeometryView3D })),
+)
+
 function App() {
+  const [show3D, setShow3D] = useState(false)
+
+  useEffect(() => {
+    // Let the controls become interactive before loading Three.js and starting WebGL.
+    const timerId = window.setTimeout(() => setShow3D(true), 120)
+    return () => window.clearTimeout(timerId)
+  }, [])
+
   return (
     <div style={{
       position: 'relative',
@@ -17,7 +29,11 @@ function App() {
       background: '#1A1F16',
     }}>
       {/* Full screen 3D background */}
-      <GeometryView3D />
+      {show3D && (
+        <Suspense fallback={null}>
+          <GeometryView3D />
+        </Suspense>
+      )}
 
       {/* UI Overlay */}
       <div style={{
