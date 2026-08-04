@@ -79,7 +79,7 @@ export class AttractorParticles {
 
     const scale = 4
 
-    // Prism color palette: pink → peach → mint → sky → lavender → pink
+    // Color palette: pink → yellow → light gray → pink
     const palette = [
       new THREE.Color(0xff6b4a), // coral
       new THREE.Color(0xffd24a), // gold
@@ -100,7 +100,7 @@ export class AttractorParticles {
       alphas[i] = 0.08 + (i / numPoints) * 0.18
 
       // Color interpolation
-      const t = (i / numPoints) * (palette.length - 1)
+      const t = (i / numPoints) * 3
       const segIdx = Math.floor(t)
       const segT = t - segIdx
       const c0 = palette[Math.min(segIdx, palette.length - 1)]

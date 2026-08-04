@@ -1,11 +1,8 @@
 import { useRef, useEffect, useCallback } from 'react'
 import { audioEngine } from '../audio/AudioEngine'
 import { useSynthStore } from '../store/synthStore'
-import { getCachedPeaks, buildWaveformPeaks, drawPeaksStroke } from '../audio/waveformPeaks'
 
 const HANDLE_HIT = 10   // px — click radius to grab a loop handle
-const CANVAS_W = 240
-const CANVAS_H = 60
 
 export function WavePreview() {
   const canvasRef  = useRef<HTMLCanvasElement>(null)
@@ -18,12 +15,6 @@ export function WavePreview() {
   const setLoopStart  = useSynthStore((s) => s.setLoopStart)
   const setLoopEnd    = useSynthStore((s) => s.setLoopEnd)
   const setLoopEnabled = useSynthStore((s) => s.setLoopEnabled)
-
-  // Rebuild peaks when buffer becomes available / changes
-  useEffect(() => {
-    const buf = audioEngine.buffer
-    if (buf && audioLoaded) buildWaveformPeaks(buf, CANVAS_W)
-  }, [audioLoaded, nodes.length])
 
   const drawFrame = useCallback(() => {
     const canvas = canvasRef.current
@@ -45,8 +36,7 @@ export function WavePreview() {
       return
     }
 
-    const peaks = getCachedPeaks() ?? buildWaveformPeaks(buffer, width)
-
+    // Read loop state fresh each frame (avoid stale closure)
     const st   = useSynthStore.getState()
     const ls   = st.loopStart
     const le   = st.loopEnd
@@ -54,6 +44,7 @@ export function WavePreview() {
     const lx   = ls * width
     const rx   = le * width
 
+    // Loop zone background
     if (loopOn) {
       const grad = ctx.createLinearGradient(lx, 0, rx, 0)
       grad.addColorStop(0, 'rgba(255, 107, 74,0.10)')
@@ -91,6 +82,7 @@ export function WavePreview() {
       ctx.stroke()
     }
 
+    // Onset node dots
     for (const node of nodes) {
       const x = (node.time / buffer.duration) * width
       ctx.beginPath()
@@ -100,6 +92,7 @@ export function WavePreview() {
       ctx.fill(); ctx.shadowBlur = 0
     }
 
+    // Loop handles
     if (loopOn) {
       const drawHandle = (x: number, color: string, flip: boolean) => {
         ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height)
@@ -115,6 +108,7 @@ export function WavePreview() {
       drawHandle(rx, '#FFD24A', true)
     }
 
+    // Playhead
     const phx = audioEngine.position * width
     ctx.beginPath(); ctx.moveTo(phx, 0); ctx.lineTo(phx, height)
     ctx.strokeStyle = '#FF6B4A'; ctx.lineWidth = 1.5
@@ -193,8 +187,8 @@ export function WavePreview() {
       <div style={{ padding: '8px 10px 10px' }}>
         <canvas
           ref={canvasRef}
-          width={CANVAS_W}
-          height={CANVAS_H}
+          width={240}
+          height={60}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           style={{
