@@ -85,7 +85,7 @@ export function GeometryView3D() {
     // Perturbation cursor sphere
     const perturbGeo = new THREE.SphereGeometry(0.14, 10, 10)
     const perturbMat = new THREE.MeshBasicMaterial({
-      color: 0x7ec8ff, wireframe: true, transparent: true, opacity: 0,
+      color: 0x3c7a4a, wireframe: true, transparent: true, opacity: 0,
     })
     const perturbSph = new THREE.Mesh(perturbGeo, perturbMat)
     sm.scene.add(perturbSph)
@@ -97,7 +97,7 @@ export function GeometryView3D() {
     connGeo.setAttribute('position', connPos)
     connPosRef.current = connPos
     const connMat = new THREE.LineBasicMaterial({
-      color: 0xc9a8ff, transparent: true, opacity: 0,
+      color: 0xc68a2e, transparent: true, opacity: 0,
       blending: THREE.AdditiveBlending, depthWrite: false,
     })
     const connLine = new THREE.Line(connGeo, connMat)

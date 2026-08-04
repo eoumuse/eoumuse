@@ -81,12 +81,10 @@ export class AttractorParticles {
 
     // Prism color palette: pink → peach → mint → sky → lavender → pink
     const palette = [
-      new THREE.Color(0xff9ac8), // pastel pink
-      new THREE.Color(0xffb37c), // peach
-      new THREE.Color(0x7cffc4), // mint
-      new THREE.Color(0x7ec8ff), // sky blue
-      new THREE.Color(0xc9a8ff), // lavender
-      new THREE.Color(0xff9ac8), // back to pink
+      new THREE.Color(0xff6b4a), // coral
+      new THREE.Color(0xffd24a), // gold
+      new THREE.Color(0xb4e050), // lime
+      new THREE.Color(0xff6b4a), // back to pink
     ]
 
     for (let i = 0; i < numPoints; i++) {

@@ -11,9 +11,9 @@ const ATTRACTOR_TYPES: { type: AttractorType; label: string; emoji: string; desc
 ]
 
 const TYPE_COLORS: Record<AttractorType, string> = {
-  lorenz:  '#FF9AC8',
-  rossler: '#9098AC',
-  thomas:  '#FFB37C',
+  lorenz:  '#FF6B4A',
+  rossler: '#8FA084',
+  thomas:  '#FFD24A',
 }
 
 export function AttractorPanel() {
@@ -69,11 +69,11 @@ export function AttractorPanel() {
                 flex: 1,
                 padding: '6px 4px',
                 borderRadius: '10px',
-                border: `1px solid ${type === t ? TYPE_COLORS[t] : 'rgba(245,240,230,0.12)'}`,
+                border: `1px solid ${type === t ? TYPE_COLORS[t] : 'rgba(240, 234, 210,0.12)'}`,
                 background: type === t
                   ? `${TYPE_COLORS[t]}22`
-                  : 'rgba(245,240,230,0.03)',
-                color: type === t ? TYPE_COLORS[t] : 'rgba(245,240,230,0.4)',
+                  : 'rgba(240, 234, 210,0.03)',
+                color: type === t ? TYPE_COLORS[t] : 'rgba(240, 234, 210,0.4)',
                 fontSize: '9px',
                 fontWeight: '700',
                 letterSpacing: '0.08em',
@@ -96,9 +96,9 @@ export function AttractorPanel() {
               flex: 1,
               padding: '5px 8px',
               borderRadius: '8px',
-              border: `1px solid ${linked ? accent : 'rgba(245,240,230,0.15)'}`,
-              background: linked ? `${accent}18` : 'rgba(245,240,230,0.04)',
-              color: linked ? accent : 'rgba(245,240,230,0.35)',
+              border: `1px solid ${linked ? accent : 'rgba(240, 234, 210,0.15)'}`,
+              background: linked ? `${accent}18` : 'rgba(240, 234, 210,0.04)',
+              color: linked ? accent : 'rgba(240, 234, 210,0.35)',
               fontSize: '9px',
               fontWeight: '700',
               letterSpacing: '0.1em',
@@ -122,14 +122,14 @@ export function AttractorPanel() {
         }}>
           {/* X → buffer position */}
           {[
-            { label: 'X → POS',   val: nx, norm: nx,                              color: '#FF9AC8' },
-            { label: 'Z → GRAIN', val: nz, norm: nz,                              color: '#FFB37C' },
+            { label: 'X → POS',   val: nx, norm: nx,                              color: '#FF6B4A' },
+            { label: 'Z → GRAIN', val: nz, norm: nz,                              color: '#FFD24A' },
           ].map(({ label, val, norm, color }) => (
             <div key={label} style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '8px', color: 'rgba(245,240,230,0.35)', letterSpacing: '0.06em', marginBottom: '2px' }}>
+              <div style={{ fontSize: '8px', color: 'rgba(240, 234, 210,0.35)', letterSpacing: '0.06em', marginBottom: '2px' }}>
                 {label}
               </div>
-              <div style={{ height: '3px', borderRadius: '2px', background: 'rgba(245,240,230,0.08)', overflow: 'hidden', marginBottom: '2px' }}>
+              <div style={{ height: '3px', borderRadius: '2px', background: 'rgba(240, 234, 210,0.08)', overflow: 'hidden', marginBottom: '2px' }}>
                 <div style={{ height: '100%', width: `${norm * 100}%`, background: color, boxShadow: `0 0 6px ${color}`, transition: 'width 0.05s' }} />
               </div>
               <div style={{ fontSize: '9px', color, fontVariantNumeric: 'tabular-nums', textShadow: `0 0 6px ${color}` }}>
@@ -140,25 +140,25 @@ export function AttractorPanel() {
 
           {/* Vortex pitch meter — shows current semitone value */}
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '8px', color: 'rgba(245,240,230,0.35)', letterSpacing: '0.06em', marginBottom: '2px' }}>
+            <div style={{ fontSize: '8px', color: 'rgba(240, 234, 210,0.35)', letterSpacing: '0.06em', marginBottom: '2px' }}>
               ↑ VORTEX
             </div>
             {/* Centred bar: negative = left, positive = right */}
-            <div style={{ height: '3px', borderRadius: '2px', background: 'rgba(245,240,230,0.08)', overflow: 'hidden', position: 'relative', marginBottom: '2px' }}>
+            <div style={{ height: '3px', borderRadius: '2px', background: 'rgba(240, 234, 210,0.08)', overflow: 'hidden', position: 'relative', marginBottom: '2px' }}>
               <div style={{
                 position: 'absolute',
                 top: 0,
                 height: '100%',
                 width: `${Math.abs(vortexPitch) / 24 * 50}%`,
                 left: vortexPitch >= 0 ? '50%' : `${50 - Math.abs(vortexPitch) / 24 * 50}%`,
-                background: '#FFB37C',
-                boxShadow: '0 0 6px #FFB37C',
+                background: '#FFD24A',
+                boxShadow: '0 0 6px #FFD24A',
                 transition: 'all 0.05s',
               }} />
               {/* Centre tick */}
-              <div style={{ position: 'absolute', top: 0, left: '50%', width: '1px', height: '100%', background: 'rgba(245,240,230,0.3)' }} />
+              <div style={{ position: 'absolute', top: 0, left: '50%', width: '1px', height: '100%', background: 'rgba(240, 234, 210,0.3)' }} />
             </div>
-            <div style={{ fontSize: '9px', color: '#FFB37C', fontVariantNumeric: 'tabular-nums', textShadow: '0 0 6px #FFB37C' }}>
+            <div style={{ fontSize: '9px', color: '#FFD24A', fontVariantNumeric: 'tabular-nums', textShadow: '0 0 6px #FFD24A' }}>
               {vortexPitch >= 0 ? '+' : ''}{vortexPitch.toFixed(1)} st
             </div>
           </div>
@@ -166,15 +166,15 @@ export function AttractorPanel() {
 
         {/* Vortex pitch controls */}
         <div style={{
-          background: 'rgba(255,230,41,0.04)',
-          border: '1px solid rgba(255,230,41,0.18)',
+          background: 'rgba(255, 210, 74,0.04)',
+          border: '1px solid rgba(255, 210, 74,0.18)',
           borderRadius: '10px',
           padding: '8px 10px',
           display: 'flex',
           flexDirection: 'column',
           gap: '8px',
         }}>
-          <div style={{ fontSize: '8px', color: '#FFB37C', letterSpacing: '0.12em', fontWeight: 700, opacity: 0.8 }}>
+          <div style={{ fontSize: '8px', color: '#FFD24A', letterSpacing: '0.12em', fontWeight: 700, opacity: 0.8 }}>
             ↑ VORTEX PITCH  <span style={{ opacity: 0.5, fontWeight: 400 }}>// orbital angle → semitones</span>
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -183,7 +183,7 @@ export function AttractorPanel() {
               min={1}
               max={24}
               label="ST/ORBIT"
-              color="#FFB37C"
+              color="#FFD24A"
               onChange={setSemitonesPerOrbit}
               defaultValue={7}
               formatValue={(v) => `+${v.toFixed(0)}`}
@@ -196,9 +196,9 @@ export function AttractorPanel() {
                   width: '100%',
                   padding: '5px 6px',
                   borderRadius: '8px',
-                  border: `1px solid ${pitchWrap ? '#FFB37C66' : 'rgba(245,240,230,0.12)'}`,
-                  background: pitchWrap ? 'rgba(255,230,41,0.1)' : 'rgba(245,240,230,0.03)',
-                  color: pitchWrap ? '#FFB37C' : 'rgba(245,240,230,0.3)',
+                  border: `1px solid ${pitchWrap ? '#FFD24A66' : 'rgba(240, 234, 210,0.12)'}`,
+                  background: pitchWrap ? 'rgba(255, 210, 74,0.1)' : 'rgba(240, 234, 210,0.03)',
+                  color: pitchWrap ? '#FFD24A' : 'rgba(240, 234, 210,0.3)',
                   fontSize: '8px',
                   fontWeight: 700,
                   letterSpacing: '0.08em',
@@ -210,7 +210,7 @@ export function AttractorPanel() {
               >
                 {pitchWrap ? '∞ SHEPHERD WRAP' : '⊢ CLAMP ±24st'}
               </button>
-              <div style={{ fontSize: '7.5px', color: 'rgba(245,240,230,0.25)', lineHeight: 1.4, padding: '0 2px' }}>
+              <div style={{ fontSize: '7.5px', color: 'rgba(240, 234, 210,0.25)', lineHeight: 1.4, padding: '0 2px' }}>
                 {pitchWrap
                   ? 'Pitch loops endlessly upward like a sonic vortex'
                   : 'Pitch rises then freezes at ceiling'}
@@ -275,7 +275,7 @@ export function AttractorPanel() {
         {type === 'lorenz' && (
           <div style={{
             fontSize: '9px',
-            color: p2 > 24 ? '#FF6B6B' : 'rgba(245,240,230,0.25)',
+            color: p2 > 24 ? '#FF6B6B' : 'rgba(240, 234, 210,0.25)',
             textAlign: 'center',
             letterSpacing: '0.06em',
             transition: 'color 0.3s',

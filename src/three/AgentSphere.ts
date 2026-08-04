@@ -13,8 +13,8 @@ export class AgentSphere {
     // Core sphere
     const geo = new THREE.SphereGeometry(0.12, 32, 32)
     const mat = new THREE.MeshStandardMaterial({
-      color: 0xff9ac8,
-      emissive: 0xff9ac8,
+      color: 0xff6b4a,
+      emissive: 0xff6b4a,
       emissiveIntensity: 3,
       roughness: 0.1,
       metalness: 0.8,
@@ -24,20 +24,20 @@ export class AgentSphere {
 
     // Inner glow core
     const coreGeo = new THREE.SphereGeometry(0.06, 16, 16)
-    const coreMat = new THREE.MeshBasicMaterial({ color: 0xf5f0e6, transparent: true, opacity: 0.9 })
+    const coreMat = new THREE.MeshBasicMaterial({ color: 0xf0ead2, transparent: true, opacity: 0.9 })
     this.group.add(new THREE.Mesh(coreGeo, coreMat))
 
     // Outer glow halo
     const haloGeo = new THREE.SphereGeometry(0.22, 16, 16)
     const haloMat = new THREE.MeshBasicMaterial({
-      color: 0xff9ac8, transparent: true, opacity: 0.1, side: THREE.BackSide,
+      color: 0xff6b4a, transparent: true, opacity: 0.1, side: THREE.BackSide,
     })
     this.group.add(new THREE.Mesh(haloGeo, haloMat))
 
     // Scatter radius sphere — wireframe, shows grain scatter area
     const scatterGeo = new THREE.SphereGeometry(1, 16, 12)
     const scatterMat = new THREE.MeshBasicMaterial({
-      color: 0xc9a8ff,
+      color: 0xc68a2e,
       wireframe: true,
       transparent: true,
       opacity: 0.07,
@@ -47,7 +47,7 @@ export class AgentSphere {
     this.group.add(this.scatterSphere)
 
     // Point light for local glow
-    this.light = new THREE.PointLight(0xff9ac8, 4, 3)
+    this.light = new THREE.PointLight(0xff6b4a, 4, 3)
     this.group.add(this.light)
   }
 

@@ -73,7 +73,7 @@ export class AttractorVisualizer {
     // ── Head: bright sphere at current attractor tip ───────────────────────
     const headGeo = new THREE.SphereGeometry(0.08, 12, 12)
     const headMat = new THREE.MeshBasicMaterial({
-      color: 0x7ec8ff,
+      color: 0x3c7a4a,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       transparent: true,
@@ -82,7 +82,7 @@ export class AttractorVisualizer {
     this.headMesh = new THREE.Mesh(headGeo, headMat)
     scene.add(this.headMesh)
 
-    this.headLight = new THREE.PointLight(0x7ec8ff, 2.0, 2.0)
+    this.headLight = new THREE.PointLight(0x3c7a4a, 2.0, 2.0)
     scene.add(this.headLight)
   }
 

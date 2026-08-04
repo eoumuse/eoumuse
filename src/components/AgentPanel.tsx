@@ -64,7 +64,7 @@ export function AgentPanel() {
             min={0}
             max={1}
             label="POS"
-            color="#FF9AC8"
+            color="#FF6B4A"
             onChange={handlePosition}
             defaultValue={0.5}
             formatValue={(v) => (v * 100).toFixed(0) + '%'}
@@ -74,7 +74,7 @@ export function AgentPanel() {
             min={10}
             max={2000}
             label="GRAIN"
-            color="#9098AC"
+            color="#8FA084"
             onChange={handleGrainSize}
             defaultValue={150}
             formatValue={(v) => v.toFixed(0) + 'ms'}
@@ -84,7 +84,7 @@ export function AgentPanel() {
             min={1}
             max={100}
             label="DENS"
-            color="#FFB37C"
+            color="#FFD24A"
             onChange={handleDensity}
             defaultValue={8}
             formatValue={(v) => v.toFixed(1)}
@@ -94,7 +94,7 @@ export function AgentPanel() {
             min={-24}
             max={24}
             label="PITCH"
-            color="#FFB37C"
+            color="#FFD24A"
             onChange={handlePitch}
             defaultValue={0}
             formatValue={(v) => (v >= 0 ? '+' : '') + v.toFixed(1)}
@@ -114,7 +114,7 @@ export function AgentPanel() {
             min={0}
             max={1}
             label="PAN"
-            color="#9098AC"
+            color="#8FA084"
             onChange={handlePanSpread}
             defaultValue={0.4}
             formatValue={(v) => (v * 100).toFixed(0) + '%'}

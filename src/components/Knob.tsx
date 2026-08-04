@@ -110,7 +110,7 @@ export function Knob({ value, min, max, label, color, onChange, defaultValue, fo
         <path
           d={trackPath}
           fill="none"
-          stroke="rgba(245,240,230,0.1)"
+          stroke="rgba(240, 234, 210,0.1)"
           strokeWidth={STROKE}
           strokeLinecap="round"
         />
@@ -135,7 +135,7 @@ export function Knob({ value, min, max, label, color, onChange, defaultValue, fo
           cy={CENTER}
           r={RADIUS * 0.45}
           fill="rgba(10,0,20,0.8)"
-          stroke="rgba(245,240,230,0.08)"
+          stroke="rgba(240, 234, 210,0.08)"
           strokeWidth={1}
         />
 
@@ -162,7 +162,7 @@ export function Knob({ value, min, max, label, color, onChange, defaultValue, fo
 
       <div style={{
         fontSize: '10px',
-        color: 'rgba(240, 250, 246, 0.7)',
+        color: 'rgba(240, 234, 210, 0.7)',
         fontVariantNumeric: 'tabular-nums',
         minWidth: '36px',
         textAlign: 'center',

@@ -76,9 +76,9 @@ export class NodeMesh {
     const sizes = new Float32Array(nodes.length)
     const colors = new Float32Array(nodes.length * 3)
 
-    const goldColor = new THREE.Color(0xffb37c)
-    const whiteColor = new THREE.Color(0xf5f0e6)
-    const pinkColor = new THREE.Color(0xff9ac8)
+    const goldColor = new THREE.Color(0xffd24a)
+    const whiteColor = new THREE.Color(0xf0ead2)
+    const pinkColor = new THREE.Color(0xff6b4a)
 
     for (let i = 0; i < nodes.length; i++) {
       const n = nodes[i]
@@ -113,9 +113,9 @@ export class NodeMesh {
     const colorAttr = this.geometry.getAttribute('color') as THREE.BufferAttribute
     const sizeAttr = this.geometry.getAttribute('size') as THREE.BufferAttribute
 
-    const goldColor = new THREE.Color(0xffb37c)
-    const whiteColor = new THREE.Color(0xf5f0e6)
-    const pinkColor = new THREE.Color(0xff9ac8)
+    const goldColor = new THREE.Color(0xffd24a)
+    const whiteColor = new THREE.Color(0xf0ead2)
+    const pinkColor = new THREE.Color(0xff6b4a)
 
     for (let i = 0; i < this.currentNodes.length; i++) {
       const n = this.currentNodes[i]

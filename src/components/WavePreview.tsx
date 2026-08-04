@@ -35,7 +35,7 @@ export function WavePreview() {
 
     const buffer = audioEngine.buffer
     if (!buffer) {
-      ctx.fillStyle = 'rgba(144, 152, 172, 0.35)'
+      ctx.fillStyle = 'rgba(143, 160, 132, 0.35)'
       ctx.font = '700 10px "Courier New", monospace'
       ctx.letterSpacing = '0.15em'
       ctx.textAlign = 'center'
@@ -56,27 +56,47 @@ export function WavePreview() {
 
     if (loopOn) {
       const grad = ctx.createLinearGradient(lx, 0, rx, 0)
-      grad.addColorStop(0, 'rgba(255,154,200,0.10)')
-      grad.addColorStop(1, 'rgba(255,230,41,0.10)')
+      grad.addColorStop(0, 'rgba(255, 107, 74,0.10)')
+      grad.addColorStop(1, 'rgba(255, 210, 74,0.10)')
       ctx.fillStyle = grad
       ctx.fillRect(lx, 0, rx - lx, height)
     }
 
-    drawPeaksStroke(ctx, peaks, height, 0, width, 'rgba(144,152,172,0.50)')
-    if (loopOn) {
-      drawPeaksStroke(
-        ctx, peaks, height,
-        Math.floor(lx), Math.ceil(rx),
-        'rgba(212,160,32,0.65)',
-      )
+    // Waveform
+    const nCh  = buffer.numberOfChannels
+    const len  = buffer.length
+    const step = Math.ceil(len / width)
+
+    for (let pass = 0; pass < (loopOn ? 2 : 1); pass++) {
+      // pass 0 = full waveform (dim), pass 1 = in-loop bright tint
+      const inLoop = pass === 1
+      const startI = inLoop ? Math.floor(lx) : 0
+      const endI   = inLoop ? Math.ceil(rx)  : width
+      ctx.beginPath()
+      ctx.strokeStyle = inLoop ? 'rgba(198, 138, 46,0.65)' : 'rgba(143, 160, 132,0.50)'
+      ctx.lineWidth = 1
+      let first = true
+      for (let i = startI; i < endI; i++) {
+        let min = 1, max = -1
+        for (let j = 0; j < step; j++) {
+          let s = 0
+          for (let ch = 0; ch < nCh; ch++) s += buffer.getChannelData(ch)[i * step + j] ?? 0
+          const v = s / nCh
+          if (v < min) min = v; if (v > max) max = v
+        }
+        const amp = height / 2
+        if (first) { ctx.moveTo(i, (1 + min) * amp); first = false }
+        else { ctx.lineTo(i, (1 + min) * amp); ctx.lineTo(i, (1 + max) * amp) }
+      }
+      ctx.stroke()
     }
 
     for (const node of nodes) {
       const x = (node.time / buffer.duration) * width
       ctx.beginPath()
       ctx.arc(x, height / 2, 2, 0, Math.PI * 2)
-      ctx.fillStyle = '#FFB37C'
-      ctx.shadowColor = '#FFB37C'; ctx.shadowBlur = 5
+      ctx.fillStyle = '#FFD24A'
+      ctx.shadowColor = '#FFD24A'; ctx.shadowBlur = 5
       ctx.fill(); ctx.shadowBlur = 0
     }
 
@@ -91,14 +111,14 @@ export function WavePreview() {
         else        { ctx.moveTo(x, 0); ctx.lineTo(x - 9, 0); ctx.lineTo(x, 10) }
         ctx.closePath(); ctx.fillStyle = color; ctx.fill()
       }
-      drawHandle(lx, '#FF9AC8', false)
-      drawHandle(rx, '#FFB37C', true)
+      drawHandle(lx, '#FF6B4A', false)
+      drawHandle(rx, '#FFD24A', true)
     }
 
     const phx = audioEngine.position * width
     ctx.beginPath(); ctx.moveTo(phx, 0); ctx.lineTo(phx, height)
-    ctx.strokeStyle = '#FF9AC8'; ctx.lineWidth = 1.5
-    ctx.shadowColor = '#FF9AC8'; ctx.shadowBlur = 8
+    ctx.strokeStyle = '#FF6B4A'; ctx.lineWidth = 1.5
+    ctx.shadowColor = '#FF6B4A'; ctx.shadowBlur = 8
     ctx.stroke(); ctx.shadowBlur = 0
 
     rafRef.current = requestAnimationFrame(drawFrame)
@@ -160,9 +180,9 @@ export function WavePreview() {
             style={{
               fontSize: '8px', fontWeight: 700, letterSpacing: '0.12em',
               padding: '2px 7px', borderRadius: '5px',
-              border: `1px solid ${loopEnabled ? '#FF9AC8' : 'rgba(245,240,230,0.15)'}`,
-              background: loopEnabled ? 'rgba(255,154,200,0.15)' : 'transparent',
-              color: loopEnabled ? '#FF9AC8' : 'rgba(245,240,230,0.35)',
+              border: `1px solid ${loopEnabled ? '#FF6B4A' : 'rgba(240, 234, 210,0.15)'}`,
+              background: loopEnabled ? 'rgba(255, 107, 74,0.15)' : 'transparent',
+              color: loopEnabled ? '#FF6B4A' : 'rgba(240, 234, 210,0.35)',
               cursor: 'pointer', transition: 'all 0.15s',
             }}
           >
@@ -186,7 +206,7 @@ export function WavePreview() {
         {audioLoaded && (
           <div style={{
             marginTop: '4px', fontSize: '8px',
-            color: 'rgba(144,152,172,0.4)', textAlign: 'center', letterSpacing: '0.08em',
+            color: 'rgba(143, 160, 132,0.4)', textAlign: 'center', letterSpacing: '0.08em',
           }}>
             {loopEnabled
               ? 'drag ▶ start · ◀ end handles · click to scrub'
