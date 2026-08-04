@@ -85,7 +85,7 @@ export function GeometryView3D() {
     // Perturbation cursor sphere
     const perturbGeo = new THREE.SphereGeometry(0.14, 10, 10)
     const perturbMat = new THREE.MeshBasicMaterial({
-      color: 0xffd840, wireframe: true, transparent: true, opacity: 0,
+      color: 0x3c7a4a, wireframe: true, transparent: true, opacity: 0,
     })
     const perturbSph = new THREE.Mesh(perturbGeo, perturbMat)
     sm.scene.add(perturbSph)
@@ -97,7 +97,7 @@ export function GeometryView3D() {
     connGeo.setAttribute('position', connPos)
     connPosRef.current = connPos
     const connMat = new THREE.LineBasicMaterial({
-      color: 0xd4a020, transparent: true, opacity: 0,
+      color: 0xc68a2e, transparent: true, opacity: 0,
       blending: THREE.AdditiveBlending, depthWrite: false,
     })
     const connLine = new THREE.Line(connGeo, connMat)
@@ -240,7 +240,10 @@ export function GeometryView3D() {
           const pos = store.loopEnabled
             ? store.loopStart + eng.state.nx * (store.loopEnd - store.loopStart)
             : eng.state.nx
-          audioEngine.position  = pos
+          // Smooth the position instead of snapping — the chaotic attractor's nx
+          // can leap between lobes frame-to-frame, which otherwise reads as the
+          // grain source jumping to silence/edge material mid-loop.
+          audioEngine.position  += (pos - audioEngine.position) * 0.15
           audioEngine.pitch     = eng.state.vortexPitch
           audioEngine.grainSize = 10 + eng.state.nz * 1990
         }

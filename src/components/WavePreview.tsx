@@ -26,7 +26,7 @@ export function WavePreview() {
 
     const buffer = audioEngine.buffer
     if (!buffer) {
-      ctx.fillStyle = 'rgba(136, 136, 153, 0.35)'
+      ctx.fillStyle = 'rgba(143, 160, 132, 0.35)'
       ctx.font = '700 10px "Courier New", monospace'
       ctx.letterSpacing = '0.15em'
       ctx.textAlign = 'center'
@@ -47,8 +47,8 @@ export function WavePreview() {
     // Loop zone background
     if (loopOn) {
       const grad = ctx.createLinearGradient(lx, 0, rx, 0)
-      grad.addColorStop(0, 'rgba(255,45,155,0.10)')
-      grad.addColorStop(1, 'rgba(255,230,41,0.10)')
+      grad.addColorStop(0, 'rgba(255, 107, 74,0.10)')
+      grad.addColorStop(1, 'rgba(255, 210, 74,0.10)')
       ctx.fillStyle = grad
       ctx.fillRect(lx, 0, rx - lx, height)
     }
@@ -64,7 +64,7 @@ export function WavePreview() {
       const startI = inLoop ? Math.floor(lx) : 0
       const endI   = inLoop ? Math.ceil(rx)  : width
       ctx.beginPath()
-      ctx.strokeStyle = inLoop ? 'rgba(212,160,32,0.65)' : 'rgba(136,136,153,0.50)'
+      ctx.strokeStyle = inLoop ? 'rgba(198, 138, 46,0.65)' : 'rgba(143, 160, 132,0.50)'
       ctx.lineWidth = 1
       let first = true
       for (let i = startI; i < endI; i++) {
@@ -87,8 +87,8 @@ export function WavePreview() {
       const x = (node.time / buffer.duration) * width
       ctx.beginPath()
       ctx.arc(x, height / 2, 2, 0, Math.PI * 2)
-      ctx.fillStyle = '#FFE629'
-      ctx.shadowColor = '#FFE629'; ctx.shadowBlur = 5
+      ctx.fillStyle = '#FFD24A'
+      ctx.shadowColor = '#FFD24A'; ctx.shadowBlur = 5
       ctx.fill(); ctx.shadowBlur = 0
     }
 
@@ -104,15 +104,15 @@ export function WavePreview() {
         else        { ctx.moveTo(x, 0); ctx.lineTo(x - 9, 0); ctx.lineTo(x, 10) }
         ctx.closePath(); ctx.fillStyle = color; ctx.fill()
       }
-      drawHandle(lx, '#FF2D9B', false)
-      drawHandle(rx, '#FFE629', true)
+      drawHandle(lx, '#FF6B4A', false)
+      drawHandle(rx, '#FFD24A', true)
     }
 
     // Playhead
     const phx = audioEngine.position * width
     ctx.beginPath(); ctx.moveTo(phx, 0); ctx.lineTo(phx, height)
-    ctx.strokeStyle = '#FF2D9B'; ctx.lineWidth = 1.5
-    ctx.shadowColor = '#FF2D9B'; ctx.shadowBlur = 8
+    ctx.strokeStyle = '#FF6B4A'; ctx.lineWidth = 1.5
+    ctx.shadowColor = '#FF6B4A'; ctx.shadowBlur = 8
     ctx.stroke(); ctx.shadowBlur = 0
 
     rafRef.current = requestAnimationFrame(drawFrame)
@@ -174,9 +174,9 @@ export function WavePreview() {
             style={{
               fontSize: '8px', fontWeight: 700, letterSpacing: '0.12em',
               padding: '2px 7px', borderRadius: '5px',
-              border: `1px solid ${loopEnabled ? '#FF2D9B' : 'rgba(255,255,255,0.15)'}`,
-              background: loopEnabled ? 'rgba(255,45,155,0.15)' : 'transparent',
-              color: loopEnabled ? '#FF2D9B' : 'rgba(255,255,255,0.35)',
+              border: `1px solid ${loopEnabled ? '#FF6B4A' : 'rgba(240, 234, 210,0.15)'}`,
+              background: loopEnabled ? 'rgba(255, 107, 74,0.15)' : 'transparent',
+              color: loopEnabled ? '#FF6B4A' : 'rgba(240, 234, 210,0.35)',
               cursor: 'pointer', transition: 'all 0.15s',
             }}
           >
@@ -200,7 +200,7 @@ export function WavePreview() {
         {audioLoaded && (
           <div style={{
             marginTop: '4px', fontSize: '8px',
-            color: 'rgba(136,136,153,0.4)', textAlign: 'center', letterSpacing: '0.08em',
+            color: 'rgba(143, 160, 132,0.4)', textAlign: 'center', letterSpacing: '0.08em',
           }}>
             {loopEnabled
               ? 'drag ▶ start · ◀ end handles · click to scrub'

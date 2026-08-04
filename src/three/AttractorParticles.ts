@@ -81,10 +81,10 @@ export class AttractorParticles {
 
     // Color palette: pink → yellow → light gray → pink
     const palette = [
-      new THREE.Color(0xff2d9b), // hot pink
-      new THREE.Color(0xffe629), // yellow
-      new THREE.Color(0xc0c0cc), // light gray
-      new THREE.Color(0xff2d9b), // back to pink
+      new THREE.Color(0xff6b4a), // coral
+      new THREE.Color(0xffd24a), // gold
+      new THREE.Color(0xb4e050), // lime
+      new THREE.Color(0xff6b4a), // back to pink
     ]
 
     for (let i = 0; i < numPoints; i++) {

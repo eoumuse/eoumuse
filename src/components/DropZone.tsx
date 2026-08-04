@@ -34,7 +34,7 @@ export function DropZone() {
 
     // Draw waveform
     ctx.beginPath()
-    ctx.strokeStyle = '#888899'
+    ctx.strokeStyle = '#8FA084'
     ctx.lineWidth = 1
 
     for (let i = 0; i < width; i++) {
@@ -57,7 +57,7 @@ export function DropZone() {
 
     // Glow layer
     ctx.beginPath()
-    ctx.strokeStyle = '#FF2D9B'
+    ctx.strokeStyle = '#FF6B4A'
     ctx.lineWidth = 0.5
     ctx.globalAlpha = 0.5
 
@@ -144,25 +144,25 @@ export function DropZone() {
           onClick={() => fileInputRef.current?.click()}
           style={{
             border: isDragging
-              ? '2px dashed #FF2D9B'
-              : '2px dashed rgba(136, 136, 153, 0.4)',
+              ? '2px dashed #FF6B4A'
+              : '2px dashed rgba(143, 160, 132, 0.4)',
             borderRadius: '12px',
             padding: '16px 12px',
             textAlign: 'center',
             cursor: 'pointer',
             transition: 'all 0.2s',
-            background: isDragging ? 'rgba(255, 45, 155, 0.05)' : 'transparent',
-            boxShadow: isDragging ? '0 0 20px #FF2D9B44' : 'none',
+            background: isDragging ? 'rgba(255, 107, 74, 0.05)' : 'transparent',
+            boxShadow: isDragging ? '0 0 20px #FF6B4A44' : 'none',
           }}
         >
           {isLoading ? (
-            <div style={{ color: '#888899', fontSize: '12px' }}>
+            <div style={{ color: '#8FA084', fontSize: '12px' }}>
               <div className="sparkle" style={{ fontSize: '20px', marginBottom: '4px' }}>★</div>
               ANALYZING...
             </div>
           ) : audioLoaded ? (
-            <div style={{ color: '#FFE629', fontSize: '11px' }}>
-              <div style={{ color: '#FFE629', marginBottom: '4px', fontSize: '10px' }}>✦ LOADED ✦</div>
+            <div style={{ color: '#FFD24A', fontSize: '11px' }}>
+              <div style={{ color: '#FFD24A', marginBottom: '4px', fontSize: '10px' }}>✦ LOADED ✦</div>
               <div style={{
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -174,10 +174,10 @@ export function DropZone() {
               </div>
             </div>
           ) : (
-            <div style={{ color: 'rgba(136, 136, 153, 0.7)', fontSize: '11px' }}>
-              <div className="float" style={{ fontSize: '18px', marginBottom: '6px', color: '#FF2D9B' }}>✦</div>
-              <div style={{ fontWeight: '700', letterSpacing: '0.1em', color: '#FFF0FF' }}>DROP SAMPLE</div>
-              <div style={{ fontSize: '10px', marginTop: '2px', color: 'rgba(136, 136, 153, 0.5)' }}>or click to browse</div>
+            <div style={{ color: 'rgba(143, 160, 132, 0.7)', fontSize: '11px' }}>
+              <div className="float" style={{ fontSize: '18px', marginBottom: '6px', color: '#FF6B4A' }}>✦</div>
+              <div style={{ fontWeight: '700', letterSpacing: '0.1em', color: '#F0EAD2' }}>DROP SAMPLE</div>
+              <div style={{ fontSize: '10px', marginTop: '2px', color: 'rgba(143, 160, 132, 0.5)' }}>or click to browse</div>
             </div>
           )}
         </div>

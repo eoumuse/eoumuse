@@ -48,14 +48,14 @@ export class CorpusContour {
 
     // Main corpus path through all nodes (time-ordered)
     const main = sorted.map(n => new THREE.Vector3(n.x, n.y, n.z))
-    addCurve(main, 0x5a4820, 0.65, 5)
+    addCurve(main, 0x2a3320, 0.65, 5)
 
     // Topographic offset layers (Incline-style depth)
     for (const [dy, dz, col, op] of [
-      [ 0.35, 0.2, 0x3a2e10, 0.28] as const,
-      [-0.35, 0.2, 0x3a2e10, 0.28] as const,
-      [ 0.7,  0.0, 0x251e08, 0.14] as const,
-      [-0.7,  0.0, 0x251e08, 0.14] as const,
+      [ 0.35, 0.2, 0x1f2818, 0.28] as const,
+      [-0.35, 0.2, 0x1f2818, 0.28] as const,
+      [ 0.7,  0.0, 0x161c10, 0.14] as const,
+      [-0.7,  0.0, 0x161c10, 0.14] as const,
     ]) {
       const pts = sorted.map(n => new THREE.Vector3(n.x, n.y + dy, n.z + dz))
       addCurve(pts, col, op, 3)
