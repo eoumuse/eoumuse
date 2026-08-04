@@ -49,25 +49,25 @@ export function TransportBar() {
           style={{
             width: '44px', height: '44px',
             borderRadius: '50%',
-            border: isPlaying ? '2px solid #FF2D9B' : '2px solid rgba(136,136,160,0.4)',
+            border: isPlaying ? '2px solid #FF9AC8' : '2px solid rgba(136,136,160,0.4)',
             background: isPlaying
-              ? 'radial-gradient(circle, #FF2D9B33, #323240)'
-              : 'radial-gradient(circle, #50505E55, #323240)',
+              ? 'radial-gradient(circle, #FF9AC833, #262B35)'
+              : 'radial-gradient(circle, #454B5C55, #262B35)',
             cursor: audioLoaded ? 'pointer' : 'not-allowed',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'all 0.2s',
-            boxShadow: isPlaying ? '0 0 18px #FF2D9B66, 0 0 36px #FF2D9B33' : 'none',
+            boxShadow: isPlaying ? '0 0 18px #FF9AC866, 0 0 36px #FF9AC833' : 'none',
             opacity: audioLoaded ? 1 : 0.4,
             flexShrink: 0,
           }}
         >
           {isPlaying ? (
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <rect x="2" y="2" width="10" height="10" rx="1" fill="#FF2D9B" />
+              <rect x="2" y="2" width="10" height="10" rx="1" fill="#FF9AC8" />
             </svg>
           ) : (
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M3 2L12 7L3 12V2Z" fill={audioLoaded ? '#FFE629' : 'rgba(255,230,41,0.3)'} />
+              <path d="M3 2L12 7L3 12V2Z" fill={audioLoaded ? '#FFB37C' : 'rgba(255,230,41,0.3)'} />
             </svg>
           )}
         </button>
@@ -76,8 +76,8 @@ export function TransportBar() {
         <div style={{ flex: 1 }}>
           <div style={{
             fontSize: '10px', fontWeight: '700', letterSpacing: '0.12em',
-            color: isPlaying ? '#FF2D9B' : 'rgba(136,136,160,0.7)',
-            textShadow: isPlaying ? '0 0 10px #FF2D9B' : 'none',
+            color: isPlaying ? '#FF9AC8' : 'rgba(136,136,160,0.7)',
+            textShadow: isPlaying ? '0 0 10px #FF9AC8' : 'none',
             textTransform: 'uppercase',
           }}>
             {isPlaying ? <span className="pulse-glow">● PLAYING</span>
@@ -85,8 +85,8 @@ export function TransportBar() {
               : '■ STOPPED'}
           </div>
           {isRecording && (
-            <div style={{ fontSize: '8px', color: '#FF2D9B', letterSpacing: '0.1em', marginTop: '2px' }}>
-              <span className="rec-pulse" style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#FF2D9B', marginRight: 4 }} />
+            <div style={{ fontSize: '8px', color: '#FF9AC8', letterSpacing: '0.1em', marginTop: '2px' }}>
+              <span className="rec-pulse" style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#FF9AC8', marginRight: 4 }} />
               REC
             </div>
           )}
@@ -100,8 +100,8 @@ export function TransportBar() {
           style={{
             width: '32px', height: '32px',
             borderRadius: '50%',
-            border: `2px solid ${isRecording ? '#FF2D9B' : 'rgba(136,136,160,0.35)'}`,
-            background: isRecording ? '#FF2D9B22' : 'rgba(80,80,94,0.3)',
+            border: `2px solid ${isRecording ? '#FF9AC8' : 'rgba(136,136,160,0.35)'}`,
+            background: isRecording ? '#FF9AC822' : 'rgba(80,80,94,0.3)',
             cursor: isPlaying ? 'pointer' : 'not-allowed',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             opacity: isPlaying ? 1 : 0.35,
@@ -113,7 +113,7 @@ export function TransportBar() {
           <div style={{
             width: 10, height: 10,
             borderRadius: isRecording ? '2px' : '50%',
-            background: isRecording ? '#FF2D9B' : 'rgba(255,45,155,0.6)',
+            background: isRecording ? '#FF9AC8' : 'rgba(255,154,200,0.6)',
             transition: 'border-radius 0.2s',
           }} />
         </button>
@@ -122,7 +122,7 @@ export function TransportBar() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <span style={{
             fontSize: '9px', fontWeight: '700', letterSpacing: '0.1em',
-            color: '#FFE629', textShadow: '0 0 6px #FFE62988', textTransform: 'uppercase',
+            color: '#FFB37C', textShadow: '0 0 6px #FFB37C88', textTransform: 'uppercase',
           }}>
             VOL
           </span>
@@ -132,11 +132,11 @@ export function TransportBar() {
             style={{
               width: '60px', WebkitAppearance: 'none', appearance: 'none',
               height: '4px', borderRadius: '2px',
-              background: `linear-gradient(to right, #FFE629 ${masterGain * 100}%, rgba(136,136,160,0.2) ${masterGain * 100}%)`,
+              background: `linear-gradient(to right, #FFB37C ${masterGain * 100}%, rgba(136,136,160,0.2) ${masterGain * 100}%)`,
               outline: 'none', cursor: 'pointer',
             }}
           />
-          <span style={{ fontSize: '9px', color: 'rgba(192,192,204,0.7)', minWidth: '26px' }}>
+          <span style={{ fontSize: '9px', color: 'rgba(124,255,196,0.7)', minWidth: '26px' }}>
             {Math.round(masterGain * 100)}%
           </span>
         </div>

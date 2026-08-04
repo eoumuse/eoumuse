@@ -80,7 +80,7 @@ export function EffectsPanel() {
           <div style={{
             fontSize: '8px',
             fontWeight: 700,
-            color: '#FFE629',
+            color: '#FFB37C',
             letterSpacing: '0.14em',
             marginBottom: '8px',
             opacity: 0.8,
@@ -98,9 +98,9 @@ export function EffectsPanel() {
                   flex: 1,
                   padding: '4px 6px',
                   borderRadius: '7px',
-                  border: `1px solid ${filterType === value ? '#FFE629' : 'rgba(255,255,255,0.1)'}`,
-                  background: filterType === value ? 'rgba(255, 230, 41, 0.18)' : 'rgba(255,255,255,0.03)',
-                  color: filterType === value ? '#FFE629' : 'rgba(255,255,255,0.35)',
+                  border: `1px solid ${filterType === value ? '#FFB37C' : 'rgba(245,240,230,0.1)'}`,
+                  background: filterType === value ? 'rgba(255, 230, 41, 0.18)' : 'rgba(245,240,230,0.03)',
+                  color: filterType === value ? '#FFB37C' : 'rgba(245,240,230,0.35)',
                   fontSize: '9px',
                   fontWeight: 700,
                   letterSpacing: '0.06em',
@@ -121,7 +121,7 @@ export function EffectsPanel() {
               min={80}
               max={18000}
               label="CUTOFF"
-              color="#FFE629"
+              color="#FFB37C"
               onChange={handleFilterCutoff}
               defaultValue={8000}
               formatValue={(v) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${v.toFixed(0)}`}
@@ -131,7 +131,7 @@ export function EffectsPanel() {
               min={0.1}
               max={20}
               label="RESO"
-              color="#FFE629"
+              color="#FFB37C"
               onChange={handleFilterResonance}
               defaultValue={1}
               formatValue={(v) => v.toFixed(1)}
@@ -141,15 +141,15 @@ export function EffectsPanel() {
 
         {/* Delay section */}
         <div style={{
-          background: 'rgba(136, 136, 153, 0.04)',
-          border: '1px solid rgba(136, 136, 153, 0.15)',
+          background: 'rgba(144, 152, 172, 0.04)',
+          border: '1px solid rgba(144, 152, 172, 0.15)',
           borderRadius: '10px',
           padding: '8px',
         }}>
           <div style={{
             fontSize: '8px',
             fontWeight: 700,
-            color: '#888899',
+            color: '#9098AC',
             letterSpacing: '0.14em',
             marginBottom: '8px',
             opacity: 0.8,
@@ -163,7 +163,7 @@ export function EffectsPanel() {
               min={0}
               max={2}
               label="TIME"
-              color="#888899"
+              color="#9098AC"
               onChange={handleDelayTime}
               defaultValue={0.25}
               formatValue={(v) => `${v.toFixed(2)}s`}
@@ -173,7 +173,7 @@ export function EffectsPanel() {
               min={0}
               max={0.95}
               label="FDBK"
-              color="#888899"
+              color="#9098AC"
               onChange={handleDelayFeedback}
               defaultValue={0.3}
               formatValue={(v) => `${Math.round(v * 100)}%`}
@@ -183,7 +183,7 @@ export function EffectsPanel() {
               min={0}
               max={1}
               label="WET"
-              color="#888899"
+              color="#9098AC"
               onChange={handleDelayWet}
               defaultValue={0}
               formatValue={(v) => `${Math.round(v * 100)}%`}
@@ -193,15 +193,15 @@ export function EffectsPanel() {
 
         {/* Reverb section */}
         <div style={{
-          background: 'rgba(255, 45, 155, 0.04)',
-          border: '1px solid rgba(255, 45, 155, 0.15)',
+          background: 'rgba(255, 154, 200, 0.04)',
+          border: '1px solid rgba(255, 154, 200, 0.15)',
           borderRadius: '10px',
           padding: '8px',
         }}>
           <div style={{
             fontSize: '8px',
             fontWeight: 700,
-            color: '#FF2D9B',
+            color: '#FF9AC8',
             letterSpacing: '0.14em',
             marginBottom: '8px',
             opacity: 0.8,
@@ -215,7 +215,7 @@ export function EffectsPanel() {
               min={0}
               max={1}
               label="WET"
-              color="#FF2D9B"
+              color="#FF9AC8"
               onChange={handleReverbWet}
               defaultValue={0}
               formatValue={(v) => `${Math.round(v * 100)}%`}

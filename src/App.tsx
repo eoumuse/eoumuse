@@ -14,7 +14,7 @@ function App() {
       width: '100vw',
       height: '100vh',
       overflow: 'hidden',
-      background: '#28282F',
+      background: '#1C2027',
     }}>
       {/* Full screen 3D background */}
       <GeometryView3D />
@@ -41,29 +41,29 @@ function App() {
             alignItems: 'center',
             gap: '10px',
           }}>
-            <span className="sparkle" style={{ color: '#FF2D9B', fontSize: '20px' }}>✦</span>
+            <span className="sparkle" style={{ color: '#FF9AC8', fontSize: '20px' }}>✦</span>
             <h1 style={{
               margin: 0,
               fontSize: '22px',
               fontWeight: '900',
               letterSpacing: '0.2em',
               textTransform: 'uppercase',
-              background: 'linear-gradient(90deg, #FF2D9B, #888899, #FFE629)',
+              backgroundImage: 'linear-gradient(90deg, #FF9AC8, #9098AC, #FFB37C)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
-              filter: 'drop-shadow(0 0 12px #888899)',
+              filter: 'drop-shadow(0 0 12px #9098AC)',
             }}>
               GrainWeaver
             </h1>
-            <span className="sparkle" style={{ color: '#FFE629', fontSize: '16px', animationDelay: '0.7s' }}>✧</span>
+            <span className="sparkle" style={{ color: '#FFB37C', fontSize: '16px', animationDelay: '0.7s' }}>✧</span>
           </div>
 
           <div style={{
             fontSize: '9px',
             fontWeight: '700',
             letterSpacing: '0.15em',
-            color: 'rgba(136, 136, 153, 0.5)',
+            color: 'rgba(144, 152, 172, 0.5)',
             textTransform: 'uppercase',
           }}>
             Granular Synthesizer
@@ -132,33 +132,33 @@ function InfoPanel() {
       <div className="panel-header">
         <span className="sparkle">✦</span> INFO <span className="sparkle" style={{ animationDelay: '1.2s' }}>★</span>
       </div>
-      <div style={{ padding: '12px', fontSize: '10px', color: 'rgba(136, 136, 153, 0.7)', lineHeight: '1.6' }}>
-        <div style={{ marginBottom: '8px', color: '#FFE629', fontWeight: '700', letterSpacing: '0.1em' }}>
+      <div style={{ padding: '12px', fontSize: '10px', color: 'rgba(144, 152, 172, 0.7)', lineHeight: '1.6' }}>
+        <div style={{ marginBottom: '8px', color: '#FFB37C', fontWeight: '700', letterSpacing: '0.1em' }}>
           LORENZ ATTRACTOR
         </div>
-        <div style={{ color: 'rgba(255,240,255,0.5)' }}>
+        <div style={{ color: 'rgba(240,250,246,0.5)' }}>
           σ = 10 · ρ = 28 · β = 8/3
         </div>
-        <div style={{ marginTop: '8px', color: '#FF2D9B', fontWeight: '600' }}>
+        <div style={{ marginTop: '8px', color: '#FF9AC8', fontWeight: '600' }}>
           dx/dt = σ(y−x)
         </div>
-        <div style={{ color: '#888899', fontWeight: '600' }}>
+        <div style={{ color: '#9098AC', fontWeight: '600' }}>
           dy/dt = x(ρ−z)−y
         </div>
-        <div style={{ color: '#FFE629', fontWeight: '600' }}>
+        <div style={{ color: '#FFB37C', fontWeight: '600' }}>
           dz/dt = xy − βz
         </div>
         <div style={{
           marginTop: '12px',
           padding: '8px',
           borderRadius: '8px',
-          background: 'rgba(255, 45, 155, 0.06)',
-          border: '1px solid rgba(255, 45, 155, 0.2)',
-          color: 'rgba(255,240,255,0.5)',
+          background: 'rgba(255, 154, 200, 0.06)',
+          border: '1px solid rgba(255, 154, 200, 0.2)',
+          color: 'rgba(240,250,246,0.5)',
           fontSize: '9px',
           letterSpacing: '0.05em',
         }}>
-          Drop an audio sample to seed grain nodes. Hot pink sparkles = onset points. The agent orb traverses nodes in sync with playback.
+          Drop an audio sample to seed grain nodes. Pink sparkles = onset points. The agent orb traverses nodes in sync with playback.
         </div>
 
         <div style={{ marginTop: '12px' }}>
@@ -168,8 +168,8 @@ function InfoPanel() {
             gap: '6px',
             marginBottom: '4px',
           }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#FF2D9B', boxShadow: '0 0 6px #FF2D9B' }} />
-            <span style={{ color: 'rgba(255,240,255,0.6)', fontSize: '9px' }}>Pink — hot pink trail</span>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#FF9AC8', boxShadow: '0 0 6px #FF9AC8' }} />
+            <span style={{ color: 'rgba(240,250,246,0.6)', fontSize: '9px' }}>Pink — agent trail</span>
           </div>
           <div style={{
             display: 'flex',
@@ -177,16 +177,16 @@ function InfoPanel() {
             gap: '6px',
             marginBottom: '4px',
           }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#888899', boxShadow: '0 0 6px #888899' }} />
-            <span style={{ color: 'rgba(255,240,255,0.6)', fontSize: '9px' }}>Purple — attractor arms</span>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#9098AC', boxShadow: '0 0 6px #9098AC' }} />
+            <span style={{ color: 'rgba(240,250,246,0.6)', fontSize: '9px' }}>Gray — attractor arms</span>
           </div>
           <div style={{
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
           }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#FFE629', boxShadow: '0 0 6px #FFE629' }} />
-            <span style={{ color: 'rgba(255,240,255,0.6)', fontSize: '9px' }}>Cyan — crossing paths</span>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#FFB37C', boxShadow: '0 0 6px #FFB37C' }} />
+            <span style={{ color: 'rgba(240,250,246,0.6)', fontSize: '9px' }}>Peach — crossing paths</span>
           </div>
         </div>
       </div>

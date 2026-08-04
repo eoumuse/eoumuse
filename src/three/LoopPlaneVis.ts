@@ -48,8 +48,8 @@ export class LoopPlaneVis {
       return { fill, edge }
     }
 
-    const start = makeEdgePlane(0xff2d9b)   // pink = loop IN
-    const end   = makeEdgePlane(0xffe629)   // yellow = loop OUT
+    const start = makeEdgePlane(0xff9ac8)   // pink = loop IN
+    const end   = makeEdgePlane(0xffb37c)   // peach = loop OUT
     this.startFill = start.fill
     this.startEdge = start.edge
     this.endFill   = end.fill
@@ -58,7 +58,7 @@ export class LoopPlaneVis {
     // Zone slab: a thin box spanning the loop region (scale.x set each frame)
     const slabGeo = new THREE.BoxGeometry(1, 18, 14)
     this.zoneSlab = new THREE.Mesh(slabGeo, new THREE.MeshBasicMaterial({
-      color: 0xd4a020,
+      color: 0xc9a8ff,
       transparent: true,
       opacity: 0.022,
       side: THREE.DoubleSide,

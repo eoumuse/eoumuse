@@ -79,12 +79,14 @@ export class AttractorParticles {
 
     const scale = 4
 
-    // Color palette: pink → yellow → light gray → pink
+    // Prism color palette: pink → peach → mint → sky → lavender → pink
     const palette = [
-      new THREE.Color(0xff2d9b), // hot pink
-      new THREE.Color(0xffe629), // yellow
-      new THREE.Color(0xc0c0cc), // light gray
-      new THREE.Color(0xff2d9b), // back to pink
+      new THREE.Color(0xff9ac8), // pastel pink
+      new THREE.Color(0xffb37c), // peach
+      new THREE.Color(0x7cffc4), // mint
+      new THREE.Color(0x7ec8ff), // sky blue
+      new THREE.Color(0xc9a8ff), // lavender
+      new THREE.Color(0xff9ac8), // back to pink
     ]
 
     for (let i = 0; i < numPoints; i++) {
@@ -100,7 +102,7 @@ export class AttractorParticles {
       alphas[i] = 0.08 + (i / numPoints) * 0.18
 
       // Color interpolation
-      const t = (i / numPoints) * 3
+      const t = (i / numPoints) * (palette.length - 1)
       const segIdx = Math.floor(t)
       const segT = t - segIdx
       const c0 = palette[Math.min(segIdx, palette.length - 1)]
