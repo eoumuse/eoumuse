@@ -3,6 +3,7 @@ import { Knob } from './Knob'
 import { useSynthStore } from '../store/synthStore'
 import { harmonizerEngine } from '../audio/HarmonizerEngine'
 import { CHORD_MODES } from '../audio/HarmonizerEngine'
+import { NOTE_NAMES } from '../audio/KeyDetector'
 
 const CHORD_MODE_KEYS = Object.keys(CHORD_MODES)
 
@@ -20,6 +21,9 @@ export function HarmonizerPanel() {
   const setVoiceGain = useSynthStore((s) => s.setHarmonizerVoiceGain)
   const setDetune    = useSynthStore((s) => s.setHarmonizerDetune)
   const setSpread    = useSynthStore((s) => s.setHarmonizerSpread)
+  const setRoot      = useSynthStore((s) => s.setHarmonyRoot)
+  const setScale     = useSynthStore((s) => s.setHarmonyScale)
+  const pitchLock    = useSynthStore((s) => s.pitchLockMode)
 
   const handleEnabled = useCallback(() => {
     const next = !enabled
@@ -31,7 +35,6 @@ export function HarmonizerPanel() {
 
   const handleChordMode = useCallback((mode: string) => {
     setChordMode(mode)
-    harmonizerEngine.setChordMode(mode)
   }, [setChordMode])
 
   const handleVoiceGain = useCallback((v: number) => {
@@ -50,6 +53,8 @@ export function HarmonizerPanel() {
   }, [setSpread])
 
   const confPct = Math.round(confidence * 100)
+  const detectedRoot = NOTE_NAMES.findIndex((name) =>
+    detectedKey === `${name} Major` || detectedKey === `${name} Minor`)
 
   return (
     <div className="panel">
@@ -75,6 +80,10 @@ export function HarmonizerPanel() {
         >
           {enabled ? '✦ HARMONIZER ON ✦' : '○ HARMONIZER OFF'}
         </button>
+        <p style={{ margin: 0, fontSize: '10px', lineHeight: 1.5, color: '#b8c1ae' }}>
+          {pitchLock === 'free' ? 'Voices follow the pitch in fixed intervals.' :
+            `Voices follow PITCH LOCK: ${pitchLock.toUpperCase()}. Set DRIFT to 0c for exact tuning.`}
+        </p>
 
         {/* Chord mode grid */}
         <div style={{
@@ -159,6 +168,19 @@ export function HarmonizerPanel() {
                 boxShadow: '0 0 6px #FFD24A', transition: 'width 0.5s ease',
               }} />
             </div>
+            <button type="button" disabled={detectedRoot < 0}
+              onClick={() => {
+                setRoot(detectedRoot)
+                setScale(detectedKey.endsWith(' Minor') ? 'Minor' : 'Major')
+              }}
+              style={{ width: '100%', marginTop: '8px', padding: '7px', borderRadius: '6px',
+                border: '1px solid #FFD24A', background: 'transparent', color: '#FFD24A',
+                fontSize: '9px', cursor: 'pointer' }}>
+              USE AS TARGET KEY
+            </button>
+            <p style={{ margin: '6px 0 0', color: '#b8c1ae', fontSize: '10px', lineHeight: 1.5 }}>
+              Key suggestion only. Set SOURCE NOTE separately and choose SCALE to lock.
+            </p>
           </div>
         ) : (
           <div style={{

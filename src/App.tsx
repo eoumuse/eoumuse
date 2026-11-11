@@ -6,6 +6,9 @@ import { TransportBar } from './components/TransportBar'
 import { WavePreview } from './components/WavePreview'
 import { EffectsPanel } from './components/EffectsPanel'
 import { HarmonizerPanel } from './components/HarmonizerPanel'
+import { audioEngine } from './audio/AudioEngine'
+import { harmonizerEngine } from './audio/HarmonizerEngine'
+import { useSynthStore } from './store/synthStore'
 
 const GeometryView3D = lazy(() =>
   import('./components/GeometryView3D').then((module) => ({ default: module.GeometryView3D })),
@@ -13,6 +16,24 @@ const GeometryView3D = lazy(() =>
 
 function App() {
   const [show3D, setShow3D] = useState(false)
+
+  useEffect(() => {
+    // Keep all pitch paths (manual, attractor and harmony) on the same tuning.
+    const syncPitch = () => {
+      const s = useSynthStore.getState()
+      audioEngine.pitch = s.pitch
+      audioEngine.pitchHarmony = {
+        mode: s.pitchLockMode, sourceNote: s.sourceNote, rootNote: s.harmonyRoot,
+        scale: s.harmonyScale, chordMode: s.harmonizerChordMode,
+      }
+      if (!s.attractorLinked || !s.isPlaying) audioEngine.pitchModulation = 0
+      if (harmonizerEngine.chordMode !== s.harmonizerChordMode) {
+        harmonizerEngine.setChordMode(s.harmonizerChordMode)
+      }
+    }
+    syncPitch()
+    return useSynthStore.subscribe(syncPitch)
+  }, [])
 
   useEffect(() => {
     // Let the controls become interactive before loading Three.js and starting WebGL.

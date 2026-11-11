@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { AttractorType } from '../audio/AttractorEngine'
+import type { PitchLockMode } from '../audio/PitchHarmony'
 
 export interface AudioNode3D {
   id: string
@@ -57,6 +58,10 @@ interface SynthState {
   reverbWet: number
 
   // Harmonizer
+  pitchLockMode: PitchLockMode
+  sourceNote: number
+  harmonyRoot: number
+  harmonyScale: string
   harmonizerEnabled: boolean
   harmonizerChordMode: string
   harmonizerVoiceGain: number
@@ -77,6 +82,10 @@ interface SynthState {
   setReverbWet: (v: number) => void
 
   // Harmonizer setters
+  setPitchLockMode: (v: PitchLockMode) => void
+  setSourceNote: (v: number) => void
+  setHarmonyRoot: (v: number) => void
+  setHarmonyScale: (v: string) => void
   setHarmonizerEnabled: (v: boolean) => void
   setHarmonizerChordMode: (v: string) => void
   setHarmonizerVoiceGain: (v: number) => void
@@ -154,6 +163,10 @@ export const useSynthStore = create<SynthState>((set) => ({
   reverbWet: 0,
 
   harmonizerEnabled: false,
+  pitchLockMode: 'free',
+  sourceNote: 0,
+  harmonyRoot: 0,
+  harmonyScale: 'Major',
   harmonizerChordMode: 'Triad',
   harmonizerVoiceGain: 0.35,
   harmonizerDetune: 12,
@@ -175,6 +188,10 @@ export const useSynthStore = create<SynthState>((set) => ({
   setReverbWet:       (v) => set({ reverbWet: v }),
 
   setHarmonizerEnabled:   (v) => set({ harmonizerEnabled: v }),
+  setPitchLockMode:       (v) => set({ pitchLockMode: v }),
+  setSourceNote:          (v) => set({ sourceNote: v }),
+  setHarmonyRoot:         (v) => set({ harmonyRoot: v }),
+  setHarmonyScale:        (v) => set({ harmonyScale: v }),
   setHarmonizerChordMode: (v) => set({ harmonizerChordMode: v }),
   setHarmonizerVoiceGain: (v) => set({ harmonizerVoiceGain: v }),
   setHarmonizerDetune:    (v) => set({ harmonizerDetune: v }),

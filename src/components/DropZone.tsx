@@ -155,6 +155,7 @@ export function DropZone() {
 
       // Wire harmonizer buffer
       harmonizerEngine.setBuffer(buf)
+      setDetectedKey('', 0)
 
       // Key detection is intentionally deferred and limited to a representative
       // five-second section so a ten-minute file does not freeze the interface.

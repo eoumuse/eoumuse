@@ -1,4 +1,22 @@
-# React + TypeScript + Vite
+# GrainWeaver
+
+## Pitch harmony
+
+In **GRAIN ENGINE → PITCH LOCK**, choose:
+
+- **FREE**: continuous pitch, with the original fixed harmony intervals.
+- **SCALE**: snap the main grain and harmony voices to the selected root and scale.
+- **CHORD**: snap them to the selected root and chord tones, across octaves.
+
+Set **SOURCE NOTE** to the reference note of a tonal sample, then select **TARGET ROOT** and the scale or chord. For example, an A sample with D Minor selected maps +1 semitone to Bb. **TRANSPOSE** and the pitch knob both add to the attractor's pitch motion; **OUT** shows the resulting transposition. Lock works even when HARMONIZER is off. Set its **DRIFT** to 0c for exact tuning.
+
+**USE AS TARGET KEY** copies the detected key as a target suggestion. It does not detect the sample's reference pitch or change SOURCE NOTE; select SCALE to apply the target scale. This is reference-note transposition, not per-note pitch correction: chords, changing melodies, and noise retain their internal pitch relationships.
+
+Validation: `npm test` (Node 22.18+ or 24), `npm run lint`, `npm run build`.
+
+---
+
+## React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 

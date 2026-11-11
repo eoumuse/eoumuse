@@ -1,0 +1,84 @@
+.pitch-harmony {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 210, 74, 0.2);
+  color: #F0EAD2;
+  font-size: 10px;
+}
+
+.pitch-harmony-heading {
+  margin-bottom: 8px;
+  color: #FFD24A;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.pitch-lock-modes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.pitch-lock-modes button,
+.pitch-harmony select {
+  min-width: 0;
+  min-height: 32px;
+  border: 1px solid rgba(240, 234, 210, 0.25);
+  border-radius: 7px;
+  background: #252c20;
+  color: #F0EAD2;
+  font: inherit;
+  cursor: pointer;
+}
+
+.pitch-lock-modes button[aria-pressed="true"] {
+  border-color: #FFD24A;
+  background: rgba(255, 210, 74, 0.16);
+  color: #FFD24A;
+  font-weight: 800;
+}
+
+.pitch-harmony-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.pitch-harmony-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #b8c1ae;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+}
+
+.pitch-harmony select {
+  width: 100%;
+  padding: 4px 6px;
+  font-size: 11px;
+}
+
+.pitch-harmony-wide { grid-column: 1 / -1; }
+.pitch-transpose { display: block; margin-top: 12px; color: #b8c1ae; font-size: 9px; }
+.pitch-transpose > span { display: flex; justify-content: space-between; }
+.pitch-transpose input { width: 100%; margin: 8px 0; accent-color: #FFD24A; }
+
+.pitch-harmony-output {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  color: #b8c1ae;
+  font-size: 9px;
+}
+
+.pitch-harmony-output output {
+  color: #FFD24A;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pitch-harmony-help { margin: 9px 0 0; color: #b8c1ae; font-size: 10px; line-height: 1.5; }
+.pitch-harmony :focus-visible { outline: 2px solid #FFD24A; outline-offset: 2px; }
