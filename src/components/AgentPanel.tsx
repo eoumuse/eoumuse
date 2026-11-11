@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import { Knob } from './Knob'
 import { useSynthStore } from '../store/synthStore'
 import { audioEngine } from '../audio/AudioEngine'
+import { PitchHarmonyControls } from './PitchHarmonyControls'
 
 export function AgentPanel() {
   const grainSize = useSynthStore((s) => s.grainSize)
@@ -120,6 +121,7 @@ export function AgentPanel() {
             formatValue={(v) => (v * 100).toFixed(0) + '%'}
           />
         </div>
+        <PitchHarmonyControls />
       </div>
     </div>
   )

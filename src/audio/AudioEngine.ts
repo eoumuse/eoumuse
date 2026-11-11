@@ -1,4 +1,6 @@
-import { harmonizerEngine } from './HarmonizerEngine'
+import { harmonizerEngine } from './HarmonizerEngine.ts'
+import { DEFAULT_PITCH_HARMONY, resolveGrainPitch } from './PitchHarmony.ts'
+import type { PitchHarmonySettings } from './PitchHarmony.ts'
 
 export class AudioEngine {
   ctx!: AudioContext
@@ -8,6 +10,12 @@ export class AudioEngine {
   grainSize = 150 // ms
   density = 8 // grains/sec
   pitch = 0 // semitones
+  pitchModulation = 0 // attractor offset, added to the manual pitch before locking
+  pitchHarmony: PitchHarmonySettings = { ...DEFAULT_PITCH_HARMONY }
+
+  get effectivePitch(): number {
+    return resolveGrainPitch(this.pitch + this.pitchModulation, this.pitchHarmony)
+  }
   position = 0.5 // 0-1
   scatter = 0.2 // 0-1
   panSpread = 0.4 // 0-1
@@ -251,12 +259,14 @@ export class AudioEngine {
     if (!this.buffer || !this._isStarted) return
 
     // Tick harmonizer voices
+    const pitch = this.effectivePitch
     harmonizerEngine.tick(
       this.position,
-      this.pitch,
+      pitch,
       this.grainSize,
       this.density,
       this.scatter,
+      this.pitchHarmony,
     )
 
     const lookahead = 0.1
@@ -266,17 +276,20 @@ export class AudioEngine {
     while (this.nextGrainTime < this.ctx.currentTime + lookahead) {
       const src = this.ctx.createBufferSource()
       src.buffer = this.buffer
-      src.playbackRate.value = Math.pow(2, this.pitch / 12)
+      const playbackRate = Math.pow(2, pitch / 12)
+      src.playbackRate.value = playbackRate
 
       const scatterRange = this.scatter * bufferDuration * 0.1
       const rawOffset =
         this.position * bufferDuration + (Math.random() - 0.5) * scatterRange
 
-      const safeGrainSize = Math.min(grainSizeSec, bufferDuration * 0.5)
-      const offset = Math.max(0, Math.min(rawOffset, bufferDuration - safeGrainSize - 0.001))
-      const duration = safeGrainSize
+      // start() takes source-buffer seconds; envelopes take output seconds.
+      const sourceDuration = Math.min(grainSizeSec, bufferDuration * 0.5) * playbackRate
+      const safeSourceDuration = Math.min(sourceDuration, bufferDuration)
+      const offset = Math.max(0, Math.min(rawOffset, bufferDuration - safeSourceDuration))
+      const duration = safeSourceDuration / playbackRate
 
-      src.start(this.nextGrainTime, offset, duration)
+      src.start(this.nextGrainTime, offset, safeSourceDuration)
 
       // Hanning-like window envelope
       const env = this.ctx.createGain()
@@ -290,6 +303,7 @@ export class AudioEngine {
       src.connect(env)
       env.connect(panner)
       panner.connect(this.fxInputGain)
+      src.onended = () => { src.disconnect(); env.disconnect(); panner.disconnect() }
 
       const interval = 1 / Math.max(this.density, 0.5)
       const jitter = (Math.random() - 0.5) * 0.01

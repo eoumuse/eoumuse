@@ -250,8 +250,10 @@ export function GeometryView3D() {
           // can leap between lobes frame-to-frame, which otherwise reads as the
           // grain source jumping to silence/edge material mid-loop.
           audioEngine.position  += (pos - audioEngine.position) * 0.15
-          audioEngine.pitch     = eng.state.vortexPitch
+          audioEngine.pitchModulation = eng.state.vortexPitch
           audioEngine.grainSize = 10 + eng.state.nz * 1990
+        } else {
+          audioEngine.pitchModulation = 0
         }
 
         const s = eng.scaleForType()

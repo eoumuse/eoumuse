@@ -1,25 +1,6 @@
-export const SCALES: Record<string, number[]> = {
-  'Major':      [0, 2, 4, 5, 7, 9, 11],
-  'Minor':      [0, 2, 3, 5, 7, 8, 10],
-  'Dorian':     [0, 2, 3, 5, 7, 9, 10],
-  'Pentatonic': [0, 2, 4, 7, 9],
-  'Chromatic':  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
-}
-
-export const CHORD_MODES: Record<string, number[]> = {
-  'Unison':   [0],
-  'Oct':      [0, 12],
-  '5th':      [0, 7],
-  'Power':    [0, 7, 12],
-  'Triad':    [0, 4, 7],
-  'Min':      [0, 3, 7],
-  '7th':      [0, 4, 7, 11],
-  'Min7':     [0, 3, 7, 10],
-  '9th':      [0, 4, 7, 14],
-  'Sus4':     [0, 5, 7],
-  'Stack4':   [0, 5, 10, 15],   // stacked perfect 4ths — dreamy shimmer
-  'Shimmer':  [0, 12, 19, 24],  // octave + 5th + 2oct shimmer
-}
+import { CHORD_MODES, DEFAULT_PITCH_HARMONY, resolveHarmonyPitch } from './PitchHarmony.ts'
+import type { PitchHarmonySettings } from './PitchHarmony.ts'
+export { CHORD_MODES, SCALES } from './PitchHarmony.ts'
 
 interface HarmonizerVoice {
   pitchOffsetSemitones: number
@@ -36,7 +17,6 @@ export class HarmonizerEngine {
   private voices: HarmonizerVoice[] = []
 
   enabled = false
-  rootSemitone = 0
   chordMode = 'Triad'
   voiceGain = 0.35
   detune = 12      // cents — peak detune for oscillation
@@ -87,8 +67,9 @@ export class HarmonizerEngine {
     grainSize: number,
     density: number,
     scatter: number,
+    pitchHarmony: PitchHarmonySettings = DEFAULT_PITCH_HARMONY,
   ): void {
-    if (!this.enabled || !this.buffer || !this.ctx || !this.masterGainNode) return
+    if (!this.enabled || this.voiceGain <= 0 || !this.buffer || !this.ctx || !this.masterGainNode) return
 
     const lookahead      = 0.1
     const grainSizeSec   = grainSize / 1000
@@ -101,9 +82,9 @@ export class HarmonizerEngine {
 
       // Oscillating detune + tiny per-grain random flutter
       const driftCents = Math.sin(voice.detunePhase) * this.detune
-                       + (Math.random() - 0.5) * 4
+                       + (Math.random() - 0.5) * Math.min(4, this.detune / 3)
 
-      const totalSemitones = basePitchSemitones + voice.pitchOffsetSemitones + this.rootSemitone
+      const totalSemitones = resolveHarmonyPitch(basePitchSemitones, voice.pitchOffsetSemitones, pitchHarmony)
       const playbackRate   = Math.pow(2, totalSemitones / 12) * Math.pow(2, driftCents / 1200)
 
       if (voice.nextGrainTime < now) voice.nextGrainTime = now + 0.01
@@ -115,10 +96,12 @@ export class HarmonizerEngine {
 
         const scatterRange  = scatter * bufferDuration * 0.1
         const rawOffset     = basePosition * bufferDuration + (Math.random() - 0.5) * scatterRange
-        const safeGrainSize = Math.min(grainSizeSec, bufferDuration * 0.5)
-        const offset        = Math.max(0, Math.min(rawOffset, bufferDuration - safeGrainSize - 0.001))
+        const sourceDuration = Math.min(grainSizeSec, bufferDuration * 0.5) * playbackRate
+        const safeSourceDuration = Math.min(sourceDuration, bufferDuration)
+        const safeGrainSize = safeSourceDuration / playbackRate
+        const offset        = Math.max(0, Math.min(rawOffset, bufferDuration - safeSourceDuration))
 
-        src.start(voice.nextGrainTime, offset, safeGrainSize)
+        src.start(voice.nextGrainTime, offset, safeSourceDuration)
 
         // Smooth bloom envelope (exponential → less click, more shimmer)
         const env = this.ctx.createGain()
@@ -135,6 +118,7 @@ export class HarmonizerEngine {
         src.connect(env)
         env.connect(panner)
         panner.connect(this.masterGainNode!)
+        src.onended = () => { src.disconnect(); env.disconnect(); panner.disconnect() }
 
         const interval = 1 / Math.max(density, 0.5)
         const jitter   = (Math.random() - 0.5) * 0.015
